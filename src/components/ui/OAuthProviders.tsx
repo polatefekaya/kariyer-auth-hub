@@ -40,22 +40,16 @@ export const OAuthProviders: Component<OAuthProvidersProps> = (props) => {
 
       const callbackUrl = new URL(`${window.location.origin}/auth-callback`);
       if (intendedTarget) callbackUrl.searchParams.set('next', intendedTarget as string);
-      if (finalType) callbackUrl.searchParams.set('type', AccMapByType[finalType]); // Use short code
 
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: callbackUrl.toString(),
-          queryParams: provider === 'google' ? { prompt: 'select_account' } : undefined,
-          skipBrowserRedirect: true
+          queryParams: provider === 'google' ? { prompt: 'select_account' } : undefined
         }
       });
 
       if (error) throw error;
-      
-      if (data?.url) {
-        window.location.assign(data.url);
-      }
 
     } catch (err: any) {
       console.error(`[OAuthProviders] ${provider} Login Error:`, err.message);
