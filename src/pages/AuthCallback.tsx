@@ -68,38 +68,14 @@ const AuthCallback: Component = () => {
         window.history.replaceState({}, document.title, cleanUrl);
       }
   
-      let activeSession = initialSession;
-      let accountType = activeSession.user?.user_metadata?.account_type;
+      const metadata = initialSession.user?.user_metadata || {};
   
-      if (!accountType) {
-        setStatusText("Senkronize ediliyor...");
-        console.log("[AUTH] Missing account_type. Polling for backend MassTransit completion...");
-  
-        let retryCount = 0;
-        const maxRetries = 6;
-  
-        while (!accountType && retryCount < maxRetries) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          
-          const { data: refreshData, error: refreshErr } = await supabase.auth.refreshSession();
-  
-          if (refreshErr) {
-            console.warn("[AUTH] Session refresh failed during polling:", refreshErr);
-          } else if (refreshData?.session) {
-            activeSession = refreshData.session;
-            accountType = activeSession.user?.user_metadata?.account_type;
-          }
-  
-          retryCount++;
-        }
-      }
-  
-      if (!accountType) {
-        console.error("FATAL: OAuth handoff aborted. Backend failed to assign account_type.");
-        setError("Hesap türü doğrulanamadı. Sistem yoğun olabilir, lütfen tekrar giriş yapın.");
-        setIsHandingOff(false);
-        await supabase.auth.signOut();
-        return;
+      if (!metadata.account_type) {
+          console.error("FATAL: OAuth handoff aborted. Account type is definitively missing from JWT.");
+          setError("Hesap türü doğrulanamadı.");
+          setIsHandingOff(false);
+          await supabase.auth.signOut();
+          return;
       }
   
       setStatusText("Yönlendiriliyor...");
@@ -114,7 +90,7 @@ const AuthCallback: Component = () => {
   
       try {
         const url = new URL(safeTargetUrl);
-        url.hash = `access_token=${activeSession.access_token}&refresh_token=${activeSession.refresh_token}&expires_in=${activeSession.expires_in || 3600}`;
+        url.hash = `access_token=${initialSession.access_token}&refresh_token=${initialSession.refresh_token}&expires_in=${initialSession.expires_in || 3600}`;
         const finalUrl = url.toString();
   
         sessionStorage.removeItem("kariyer_auth_redirect");
