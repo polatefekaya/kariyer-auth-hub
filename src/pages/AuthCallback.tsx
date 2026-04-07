@@ -54,109 +54,84 @@ const AuthCallback: Component = () => {
   };
 
   const executeHandoff = async (initialSession: Session) => {
-    if (
-      isHandingOff() ||
-      !initialSession?.access_token ||
-      !initialSession?.refresh_token
-    )
-      return;
-    setIsHandingOff(true);
-    setStatusText("Bağlantı güvenliği sağlanıyor...");
-
-    if (window.history && window.history.replaceState) {
-      const cleanUrl =
-        window.location.protocol +
-        "//" +
-        window.location.host +
-        window.location.pathname;
-      window.history.replaceState({}, document.title, cleanUrl);
-    }
-
-    let activeSession = initialSession;
-    const metadata = activeSession.user?.user_metadata || {};
-
-    if (!metadata.account_type) {
-      const queryParams = new URLSearchParams(window.location.search);
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-
-      const urlType = queryParams.get("type") || hashParams.get("type");
-      const storageType = sessionStorage.getItem("kariyer_oauth_type");
-
-      const rawTypeString = urlType || storageType;
-
-      const finalType: AccountType | null = rawTypeString
-        ? AccMapById[rawTypeString as AccountTypeId] ||
-          (rawTypeString in AccMapByType
-            ? (rawTypeString as AccountType)
-            : null)
-        : null;
-
-      if (!finalType) {
-        console.error(
-          `FATAL: OAuth handoff aborted. Unrecognized account type: ${rawTypeString}`,
-        );
-        setError(
-          "Hesap türü belirlenemedi. Lütfen giriş sayfasına dönerek tekrar deneyin.",
-        );
+      if (
+        isHandingOff() ||
+        !initialSession?.access_token ||
+        !initialSession?.refresh_token
+      )
+        return;
+        
+      setIsHandingOff(true);
+      setStatusText("Bağlantı güvenliği sağlanıyor...");
+  
+      if (window.history && window.history.replaceState) {
+        const cleanUrl =
+          window.location.protocol +
+          "//" +
+          window.location.host +
+          window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+  
+      let activeSession = initialSession;
+      let accountType = activeSession.user?.user_metadata?.account_type;
+  
+      if (!accountType) {
+        setStatusText("Senkronize ediliyor...");
+        console.log("[AUTH] Missing account_type. Polling for backend MassTransit completion...");
+  
+        let retryCount = 0;
+        const maxRetries = 6;
+  
+        while (!accountType && retryCount < maxRetries) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          
+          const { data: refreshData, error: refreshErr } = await supabase.auth.refreshSession();
+  
+          if (refreshErr) {
+            console.warn("[AUTH] Session refresh failed during polling:", refreshErr);
+          } else if (refreshData?.session) {
+            activeSession = refreshData.session;
+            accountType = activeSession.user?.user_metadata?.account_type;
+          }
+  
+          retryCount++;
+        }
+      }
+  
+      if (!accountType) {
+        console.error("FATAL: OAuth handoff aborted. Backend failed to assign account_type.");
+        setError("Hesap türü doğrulanamadı. Sistem yoğun olabilir, lütfen tekrar giriş yapın.");
         setIsHandingOff(false);
         await supabase.auth.signOut();
         return;
       }
-
-      setStatusText("Kullanıcı profili yapılandırılıyor...");
-
+  
+      setStatusText("Yönlendiriliyor...");
+  
+      const finalQueryParams = new URLSearchParams(window.location.search);
+      const urlPreservedTarget = finalQueryParams.get("next");
+      const storageTarget = sessionStorage.getItem("kariyer_auth_redirect");
+  
+      const safeTargetUrl = validateRedirectTarget(
+        urlPreservedTarget || storageTarget,
+      );
+  
       try {
-        const { error: updateErr } = await supabase.auth.updateUser({
-          data: { account_type: finalType },
-        });
-
-        if (updateErr) throw updateErr;
-
-        const {
-          data: { session: freshSession },
-          error: refreshErr,
-        } = await supabase.auth.getSession();
-
-        if (refreshErr || !freshSession) {
-          throw new Error("Profil güncellendi ancak yeni oturum alınamadı.");
-        }
-
-        activeSession = freshSession;
+        const url = new URL(safeTargetUrl);
+        url.hash = `access_token=${activeSession.access_token}&refresh_token=${activeSession.refresh_token}&expires_in=${activeSession.expires_in || 3600}`;
+        const finalUrl = url.toString();
+  
+        sessionStorage.removeItem("kariyer_auth_redirect");
+        sessionStorage.removeItem("kariyer_oauth_type");
+  
+        setManualRedirectUrl(finalUrl);
+        window.location.replace(finalUrl);
       } catch (err) {
-        console.error("Failed to patch OAuth user metadata:", err);
-        setError(
-          "Profil yapılandırması başarısız oldu. Lütfen tekrar giriş yapın.",
-        );
-        setIsHandingOff(false);
-        return;
+        console.error("URL Construction Error:", err);
+        setError("Yönlendirme sağlanamadı.");
       }
-    }
-
-    const finalQueryParams = new URLSearchParams(window.location.search);
-    const urlPreservedTarget = finalQueryParams.get("next");
-    const storageTarget = sessionStorage.getItem("kariyer_auth_redirect");
-
-    const safeTargetUrl = validateRedirectTarget(
-      urlPreservedTarget || storageTarget,
-    );
-
-    setStatusText("Uygulamaya yönlendiriliyor...");
-
-    try {
-      const url = new URL(safeTargetUrl);
-      url.hash = `access_token=${activeSession.access_token}&refresh_token=${activeSession.refresh_token}&expires_in=${activeSession.expires_in || 3600}`;
-      const finalUrl = url.toString();
-
-      sessionStorage.removeItem("kariyer_auth_redirect");
-      sessionStorage.removeItem("kariyer_oauth_type");
-
-      setManualRedirectUrl(finalUrl);
-      window.location.replace(finalUrl);
-    } catch (err) {
-      console.error("URL Construction Error:", err);
-      setError("Güvenli bir yönlendirme sağlanamadı.");
-    }
-  };
+    };
 
   onMount(() => {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -210,7 +185,7 @@ const AuthCallback: Component = () => {
 
     stuckTimeout = window.setTimeout(() => {
       if (manualRedirectUrl()) {
-        setStatusText("Uygulama bekleniyor...");
+        setStatusText("Bekleniyor...");
       }
     }, 3000);
   });
