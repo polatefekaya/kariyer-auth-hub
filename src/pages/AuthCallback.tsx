@@ -12,12 +12,7 @@ import { AuthHeader } from "../components/layout/AuthHeader";
 import { ErrorAlert } from "../components/ui/ErrorAlert";
 import { ALLOWED_ORIGINS } from "../types/config";
 import { AuthHeaderTexts } from "../constants/authTexts";
-import {
-  AccMapById,
-  AccMapByType,
-  type AccountType,
-  type AccountTypeId,
-} from "../types/account";
+
 
 const AuthCallback: Component = () => {
   const navigate = useNavigate();
