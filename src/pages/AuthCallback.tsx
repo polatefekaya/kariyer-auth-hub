@@ -12,7 +12,12 @@ import { AuthHeader } from "../components/layout/AuthHeader";
 import { ErrorAlert } from "../components/ui/ErrorAlert";
 import { ALLOWED_ORIGINS } from "../types/config";
 import { AuthHeaderTexts } from "../constants/authTexts";
-
+import {
+  AccMapById,
+  AccMapByType,
+  type AccountType,
+  type AccountTypeId,
+} from "../types/account";
 
 const AuthCallback: Component = () => {
   const navigate = useNavigate();
@@ -49,60 +54,109 @@ const AuthCallback: Component = () => {
   };
 
   const executeHandoff = async (initialSession: Session) => {
-      if (
-        isHandingOff() ||
-        !initialSession?.access_token ||
-        !initialSession?.refresh_token
-      )
+    if (
+      isHandingOff() ||
+      !initialSession?.access_token ||
+      !initialSession?.refresh_token
+    )
+      return;
+    setIsHandingOff(true);
+    setStatusText("Bağlantı güvenliği sağlanıyor...");
+
+    if (window.history && window.history.replaceState) {
+      const cleanUrl =
+        window.location.protocol +
+        "//" +
+        window.location.host +
+        window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+
+    let activeSession = initialSession;
+    const metadata = activeSession.user?.user_metadata || {};
+
+    if (!metadata.account_type) {
+      const queryParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+
+      const urlType = queryParams.get("type") || hashParams.get("type");
+      const storageType = sessionStorage.getItem("kariyer_oauth_type");
+
+      const rawTypeString = urlType || storageType;
+
+      const finalType: AccountType | null = rawTypeString
+        ? AccMapById[rawTypeString as AccountTypeId] ||
+          (rawTypeString in AccMapByType
+            ? (rawTypeString as AccountType)
+            : null)
+        : null;
+
+      if (!finalType) {
+        console.error(
+          `FATAL: OAuth handoff aborted. Unrecognized account type: ${rawTypeString}`,
+        );
+        setError(
+          "Hesap türü belirlenemedi. Lütfen giriş sayfasına dönerek tekrar deneyin.",
+        );
+        setIsHandingOff(false);
+        await supabase.auth.signOut();
         return;
-        
-      setIsHandingOff(true);
-      setStatusText("Bağlantı güvenliği sağlanıyor...");
-  
-      if (window.history && window.history.replaceState) {
-        const cleanUrl =
-          window.location.protocol +
-          "//" +
-          window.location.host +
-          window.location.pathname;
-        window.history.replaceState({}, document.title, cleanUrl);
       }
-  
-      const metadata = initialSession.user?.user_metadata || {};
-  
-      if (!metadata.account_type) {
-          console.error("FATAL: OAuth handoff aborted. Account type is definitively missing from JWT.");
-          setError("Hesap türü doğrulanamadı.");
-          setIsHandingOff(false);
-          await supabase.auth.signOut();
-          return;
-      }
-  
-      setStatusText("Yönlendiriliyor...");
-  
-      const finalQueryParams = new URLSearchParams(window.location.search);
-      const urlPreservedTarget = finalQueryParams.get("next");
-      const storageTarget = sessionStorage.getItem("kariyer_auth_redirect");
-  
-      const safeTargetUrl = validateRedirectTarget(
-        urlPreservedTarget || storageTarget,
-      );
-  
+
+      setStatusText("Kullanıcı profili yapılandırılıyor...");
+
       try {
-        const url = new URL(safeTargetUrl);
-        url.hash = `access_token=${initialSession.access_token}&refresh_token=${initialSession.refresh_token}&expires_in=${initialSession.expires_in || 3600}`;
-        const finalUrl = url.toString();
-  
-        sessionStorage.removeItem("kariyer_auth_redirect");
-        sessionStorage.removeItem("kariyer_oauth_type");
-  
-        setManualRedirectUrl(finalUrl);
-        window.location.replace(finalUrl);
+        const { error: updateErr } = await supabase.auth.updateUser({
+          data: { account_type: finalType },
+        });
+
+        if (updateErr) throw updateErr;
+
+        const {
+          data: { session: freshSession },
+          error: refreshErr,
+        } = await supabase.auth.getSession();
+
+        if (refreshErr || !freshSession) {
+          throw new Error("Profil güncellendi ancak yeni oturum alınamadı.");
+        }
+
+        activeSession = freshSession;
       } catch (err) {
-        console.error("URL Construction Error:", err);
-        setError("Yönlendirme sağlanamadı.");
+        console.error("Failed to patch OAuth user metadata:", err);
+        setError(
+          "Profil yapılandırması başarısız oldu. Lütfen tekrar giriş yapın.",
+        );
+        setIsHandingOff(false);
+        return;
       }
-    };
+    }
+
+    const finalQueryParams = new URLSearchParams(window.location.search);
+    const urlPreservedTarget = finalQueryParams.get("next");
+    const storageTarget = sessionStorage.getItem("kariyer_auth_redirect");
+
+    const safeTargetUrl = validateRedirectTarget(
+      urlPreservedTarget || storageTarget,
+    );
+
+    setStatusText("Yönlendiriliyor...");
+
+    try {
+      const url = new URL(safeTargetUrl);
+      url.hash = `access_token=${activeSession.access_token}&refresh_token=${activeSession.refresh_token}&expires_in=${activeSession.expires_in || 3600}`;
+      const finalUrl = url.toString();
+
+      sessionStorage.removeItem("kariyer_auth_redirect");
+      sessionStorage.removeItem("kariyer_oauth_type");
+
+      setManualRedirectUrl(finalUrl);
+      window.location.replace(finalUrl);
+    } catch (err) {
+      console.error("URL Construction Error:", err);
+      setError("Güvenli bir yönlendirme sağlanamadı.");
+    }
+  };
 
   onMount(() => {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -156,7 +210,7 @@ const AuthCallback: Component = () => {
 
     stuckTimeout = window.setTimeout(() => {
       if (manualRedirectUrl()) {
-        setStatusText("Bekleniyor...");
+        setStatusText("Uygulama bekleniyor...");
       }
     }, 3000);
   });
