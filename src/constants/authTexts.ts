@@ -39,7 +39,7 @@ export const AuthHeaderTexts = {
 
   migrate: (): AuthHeaderContent => ({
     title: "Kariyer Zamanı",
-    description: "Hesabınızı yeni sisteme taşıyın."
+    description: "Lütfen Şifrenizi Güncelleyin."
   }),
 
   callbackError: (): AuthHeaderContent => ({

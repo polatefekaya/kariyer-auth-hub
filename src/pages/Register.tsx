@@ -41,6 +41,7 @@ const Register: Component = () => {
       phone: "",
       email: "",
       password: "",
+      confirmPassword: "",
       cfToken: null as string | null,
       accountType: "employee" as AccountType,
       referralCode: "",
@@ -86,7 +87,17 @@ const Register: Component = () => {
       );
     }
   });
-
+  
+  const passwordsMatch = createMemo(() => {
+    return state.payload.password.length > 0 && 
+           state.payload.password === state.payload.confirmPassword;
+  });
+  
+  const validConfirmPassword = createMemo<ValidationStatus>(() => {
+    if (!state.payload.confirmPassword) return "idle";
+    return passwordsMatch() ? "valid" : "invalid";
+  });
+  
   createEffect(() => {
     const rawType = searchParams.type;
     const typeParam = Array.isArray(rawType) ? rawType[0] : rawType;
@@ -245,6 +256,7 @@ const Register: Component = () => {
     if (validFirstName() !== "valid") return true;
     if (validLastName() !== "valid") return true;
     if (validPassword() !== "valid") return true;
+    if (!passwordsMatch()) return true;
 
     if (state.status.email !== "available") return true;
     if (state.status.phone !== "available") return true;
@@ -442,6 +454,18 @@ const Register: Component = () => {
             />
           </Show>
         </div>
+        
+        <TextInput
+            label="Şifre Tekrar"
+            type="password"
+            maxLength={128}
+            value={state.payload.confirmPassword}
+            onInput={(e) => setState("payload", "confirmPassword", e.currentTarget.value)}
+            validationState={validConfirmPassword()}
+            error="Şifreler eşleşmiyor"
+            disabled={state.isSubmitting}
+            autocomplete="off"
+          />
 
         <Show when={turnstileSiteKey}>
           <div class="py-2 flex justify-center">

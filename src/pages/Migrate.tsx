@@ -49,15 +49,15 @@ const AccountSelectButton: Component<{
 const getAccountDisplayInfo = (role: string) => {
   const normalizedRole = role.toLowerCase();
   if (normalizedRole === "company" || normalizedRole === "b" || normalizedRole === "employer") {
-    return { title: "Kurumsal İşveren", description: "Şirket profilimi taşı" };
+    return { title: "Kurumsal İşveren", description: "Şirket profilim ile devam et." };
   }
   if (normalizedRole === "admin" || normalizedRole === "super_admin" || normalizedRole === "moderator" || normalizedRole === "a") {
-    return { title: "Yönetici", description: "Yönetim paneli profilimi taşı" };
+    return { title: "Yönetici", description: "Yönetim paneli profilim ile devam et." };
   }
   if (normalizedRole === "community" || normalizedRole === "co") {
-    return { title: "Topluluk", description: "Topluluk profilimi taşı" };
+    return { title: "Topluluk", description: "Topluluk profilim ile devam et." };
   }
-  return { title: "Bireysel Aday", description: "İş arayan profilimi taşı" };
+  return { title: "Bireysel Aday", description: "İş arayan profilim ile devam et." };
 };
 
 const Migrate: Component = () => {
@@ -68,16 +68,17 @@ const Migrate: Component = () => {
     payload: {
       email: "",
       password: "",
+      confirmPassword: "",
       cfToken: null as string | null,
       accountType: null as AccountType | null,
     },
-    errors: { email: "", global: null as string | null },
+    errors: { email: "", confirmPassword: "", global: null as string | null },
     ui: {
       step: 1,
       isSubmitting: false,
       isFetchingType: false,
       hasCollision: false,
-      availableAccounts: [] as string[], // 🔥 Hold the dynamic accounts here
+      availableAccounts: [] as string[],
     },
   });
 
@@ -112,7 +113,6 @@ const Migrate: Component = () => {
       ? rawTypeParam[0]
       : rawTypeParam;
 
-    // If an exact type is provided in the URL, skip the collision check and go to step 2
     if (typeParam && conflictParam !== "true") {
       const resolvedType =
         AccMapById[typeParam as AccountTypeId] ||
@@ -125,7 +125,6 @@ const Migrate: Component = () => {
       }
     } 
     
-    // Otherwise, ALWAYS fetch the available accounts for this email to render the buttons
     if (currentEmail) {
       try {
         setState("ui", "isFetchingType", true);
@@ -140,7 +139,6 @@ const Migrate: Component = () => {
           const accounts = data.data;
 
           if (data.success && Array.isArray(accounts)) {
-            // Filter out already migrated accounts just in case, and map to roles
             const pendingAccounts = accounts
                 .filter((acc: any) => !acc.is_migrated)
                 .map((acc: any) => acc.role);
@@ -164,7 +162,18 @@ const Migrate: Component = () => {
       }
     }
   });
-
+  
+  const passwordsMatch = createMemo(() => {
+    const p = state.payload.password;
+    const cp = state.payload.confirmPassword;
+    return p.length > 0 && p === cp;
+  });
+  
+  const validConfirmPassword = createMemo<ValidationStatus>(() => {
+    if (!state.payload.confirmPassword) return "idle";
+    return passwordsMatch() ? "valid" : "invalid";
+  });
+  
   const validEmail = createMemo<ValidationStatus>(() => {
     if (!state.payload.email) return "idle";
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -199,6 +208,7 @@ const Migrate: Component = () => {
     if (state.ui.isSubmitting || state.ui.isFetchingType) return true;
     if (state.ui.step === 2 && !state.payload.accountType) return true;
     if (validEmail() !== "valid" || validPassword() !== "valid") return true;
+    if (!passwordsMatch()) return true;
     if (turnstileSiteKey && !state.payload.cfToken) return true;
     return false;
   });
@@ -214,6 +224,7 @@ const Migrate: Component = () => {
       setState("ui", "step", 1);
       setState("payload", "accountType", null);
       setState("payload", "password", "");
+      setState("payload", "confirmPassword", "");
     } else {
       navigate("/login");
     }
@@ -249,7 +260,7 @@ const Migrate: Component = () => {
         errStr.includes("already exists")
       ) {
         errorMessage =
-          "Hesabınız zaten yeni sisteme taşınmış. Lütfen giriş yapın.";
+          "Hesabınız zaten yakın zamanda güncellenmiş. Lütfen giriş yapın.";
       } else if (errStr.includes("rate limit")) {
         errorMessage =
           "Çok fazla deneme yaptınız. Lütfen biraz bekleyip tekrar deneyin.";
@@ -330,18 +341,17 @@ const Migrate: Component = () => {
               <div>
                 <p class="font-bold mb-1">Hesap Çakışması</p>
                 <p class="opacity-90">
-                  Bu e-posta adresiyle birden fazla hesabınız var. Taşıma işlemine devam etmek için öncelikli hesabınızı seçin.
+                  Bu e-posta adresiyle birden fazla hesabınız var. Güncelleme işlemine devam etmek için öncelikli hesabınızı seçin.
                 </p>
               </div>
             </div>
           </div>
 
           <h3 class="text-sm font-semibold text-slate-700 mb-3 px-1">
-            Taşınacak hesabı seçin:
+            Devam edilecek hesabı seçin:
           </h3>
 
           <div class="flex flex-col gap-3">
-            {/* 🔥 FAANG FIX: Dynamically render only the roles retrieved from the API */}
             <Show 
               when={state.ui.availableAccounts.length > 0} 
               fallback={<div class="p-4 text-center text-sm text-slate-500 animate-pulse">Hesaplar yükleniyor...</div>}
@@ -373,10 +383,10 @@ const Migrate: Component = () => {
           class="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300"
         >
           <div class="mb-4">
-            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-              Taşınacak Hesap Tipi
-            </label>
-            <div class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 flex items-center gap-2 shadow-inner">
+            {/*<label class="block text-xs font-medium text-slate-500 tracking-wider mb-1">
+              Güncellenecek Hesap
+            </label>*/}
+            <div class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 flex items-center gap-2 ">
               <Show
                 when={!state.ui.isFetchingType}
                 fallback={
@@ -404,7 +414,7 @@ const Migrate: Component = () => {
           </div>
 
           <TextInput
-            label="Mevcut E-Posta Adresiniz"
+            label="E-Posta Adresiniz"
             type="email"
             maxLength={255}
             value={state.payload.email}
@@ -416,7 +426,7 @@ const Migrate: Component = () => {
 
           <div class="flex flex-col gap-2">
             <TextInput
-              label="Yeni Sistem Şifrenizi Belirleyin"
+              label="Yeni Şifrenizi Belirleyin"
               type="password"
               maxLength={128}
               value={state.payload.password}
@@ -434,6 +444,15 @@ const Migrate: Component = () => {
               />
             </Show>
           </div>
+          <TextInput
+              label="Yeni Şifrenizi Onaylayın"
+              type="password"
+              value={state.payload.confirmPassword}
+              onInput={(e) => setState("payload", "confirmPassword", e.currentTarget.value)}
+              validationState={validConfirmPassword()}
+              error="Şifreler birbiriyle eşleşmiyor"
+              disabled={state.ui.isSubmitting}
+            />
 
           <Show when={turnstileSiteKey}>
             <div class="py-2 flex justify-center">
@@ -461,7 +480,7 @@ const Migrate: Component = () => {
             loading={state.ui.isSubmitting}
             disabled={isSubmitDisabled()}
           >
-            Hesabımı Taşı ve Doğrula
+            Şifremi Güncelle
           </SubmitButton>
           <Show 
             when={state.payload.accountType !== "admin"} 
