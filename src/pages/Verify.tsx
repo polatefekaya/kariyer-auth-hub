@@ -50,7 +50,6 @@ const Verify: Component = () => {
   const [isFocused, setIsFocused] = createSignal(false);
 
   let inputRef!: HTMLInputElement;
-  const defaultRedirectUrl = import.meta.env.VITE_DEFAULT_REDIRECT_URL;
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
   const rawTypeParam = searchParams.type;

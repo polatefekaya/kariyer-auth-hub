@@ -31,7 +31,6 @@ const Login: Component = () => {
     isCheckingLegacy: false,
   });
   
-  const defaultRedirectUrl = import.meta.env.VITE_DEFAULT_REDIRECT_URL;
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
   const apiUrl = import.meta.env.VITE_API_URL; 
 
