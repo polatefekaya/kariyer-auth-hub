@@ -151,7 +151,7 @@ const Verify: Component = () => {
       console.log("Verified user:", data.user?.id);
 
       const intendedTarget = sessionStorage.getItem("kariyer_auth_redirect");
-      const targetRedirect = getDefaultRedirect(resolvedType);
+      const targetRedirect = getDefaultRedirect(typeParam as AccountTypeId);
 
       if (intendedTarget) {
         sessionStorage.removeItem("kariyer_auth_redirect");

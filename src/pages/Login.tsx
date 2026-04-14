@@ -153,7 +153,7 @@ const Login: Component = () => {
         url.hash = `access_token=${data.session.access_token}&refresh_token=${data.session.refresh_token}&expires_in=${data.session.expires_in}`;
         window.location.replace(url.toString());
       } else {
-        window.location.href = getDefaultRedirect(state.payload.accountType);
+        window.location.href = getDefaultRedirect(AccMapByType[state.payload.accountType]);
       }
     }
 
