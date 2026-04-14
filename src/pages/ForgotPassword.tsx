@@ -92,7 +92,8 @@ const ForgotPassword: Component = () => {
       <AuthHeader
               title={headerText().title}
               description={headerText().description}
-              class="mb-12"
+        class="mb-12"
+        accountType={resolvedType}
             />
 
       <Show when={state.success}>

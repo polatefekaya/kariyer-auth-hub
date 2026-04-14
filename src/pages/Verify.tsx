@@ -1,4 +1,11 @@
-import { type Component, createMemo, onMount, Show, createSignal, onCleanup } from "solid-js";
+import {
+  type Component,
+  createMemo,
+  onMount,
+  Show,
+  createSignal,
+  onCleanup,
+} from "solid-js";
 import { useSearchParams, useNavigate } from "@solidjs/router";
 import { supabase } from "../lib/supabase";
 import { AuthHeader } from "../components/layout/AuthHeader";
@@ -8,7 +15,13 @@ import { Turnstile } from "../components/Turnstile";
 import { cn } from "../utils/cn";
 import { AuthFooter } from "../components/layout/AuthFooter";
 import { AuthHeaderTexts } from "../constants/authTexts";
-import { AccMapById, AccMapByType, type AccountType, type AccountTypeId } from "../types/account";
+import {
+  AccMapById,
+  AccMapByType,
+  type AccountType,
+  type AccountTypeId,
+} from "../types/account";
+import { getDefaultRedirect } from "../utils/redirectHelper";
 
 const Verify: Component = () => {
   const [searchParams] = useSearchParams();
@@ -22,7 +35,9 @@ const Verify: Component = () => {
       initialEmail = decodeURIComponent(extracted).trim().toLowerCase();
     } catch (e) {
       console.warn("[Verify] Malformed email parameter in URL.");
-      initialEmail = (Array.isArray(rawEmail) ? rawEmail[0] : rawEmail).trim().toLowerCase();
+      initialEmail = (Array.isArray(rawEmail) ? rawEmail[0] : rawEmail)
+        .trim()
+        .toLowerCase();
     }
   }
 
@@ -37,6 +52,20 @@ const Verify: Component = () => {
   let inputRef!: HTMLInputElement;
   const defaultRedirectUrl = import.meta.env.VITE_DEFAULT_REDIRECT_URL;
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+
+  const rawTypeParam = searchParams.type;
+  const typeParam = Array.isArray(rawTypeParam)
+    ? rawTypeParam[0]
+    : rawTypeParam;
+  const resolvedType = typeParam
+    ? AccMapById[typeParam as AccountTypeId] ||
+      (typeParam in AccMapByType ? (typeParam as AccountType) : null)
+    : null;
+
+  const currentTypeParams = resolvedType
+    ? `?type=${AccMapByType[resolvedType]}`
+    : "";
+  const dynamicLoginRoute = `/login${currentTypeParams}`;
 
   onMount(() => {
     if (!initialEmail) {
@@ -123,6 +152,8 @@ const Verify: Component = () => {
       console.log("Verified user:", data.user?.id);
 
       const intendedTarget = sessionStorage.getItem("kariyer_auth_redirect");
+      const targetRedirect = getDefaultRedirect(resolvedType);
+
       if (intendedTarget) {
         sessionStorage.removeItem("kariyer_auth_redirect");
         try {
@@ -130,10 +161,10 @@ const Verify: Component = () => {
           url.hash = `access_token=${data.session.access_token}&refresh_token=${data.session.refresh_token}&expires_in=${data.session.expires_in}`;
           window.location.replace(url.toString());
         } catch (urlErr) {
-          window.location.href = defaultRedirectUrl;
+          window.location.href = targetRedirect;
         }
       } else {
-        window.location.href = defaultRedirectUrl;
+        window.location.href = targetRedirect;
       }
     }
 
@@ -174,7 +205,8 @@ const Verify: Component = () => {
       const errStr = resendError.message.toLowerCase();
 
       if (errStr.includes("rate limit")) {
-        errorMessage = "Çok sık kod istediniz. Lütfen e-postanızı kontrol edin veya biraz bekleyin.";
+        errorMessage =
+          "Çok sık kod istediniz. Lütfen e-postanızı kontrol edin veya biraz bekleyin.";
       } else {
         errorMessage = resendError.message;
       }
@@ -189,19 +221,13 @@ const Verify: Component = () => {
     }
   };
 
-  const rawTypeParam = searchParams.type;
-  const typeParam = Array.isArray(rawTypeParam) ? rawTypeParam[0] : rawTypeParam;
-  const resolvedType = typeParam ? (AccMapById[typeParam as AccountTypeId] || (typeParam in AccMapByType ? typeParam as AccountType : null)) : null;
-
-  const currentTypeParams = resolvedType ? `?type=${AccMapByType[resolvedType]}` : "";
-  const dynamicLoginRoute = `/login${currentTypeParams}`;
-
   return (
     <div class="bg-transparent rounded-3xl w-full max-w-sm">
-      <AuthHeader 
-        title={AuthHeaderTexts.verify().title} 
-        description={AuthHeaderTexts.verify().description} 
+      <AuthHeader
+        title={AuthHeaderTexts.verify().title}
+        description={AuthHeaderTexts.verify().description}
         class="mb-12"
+        accountType={resolvedType}
       />
 
       <div class="w-full flex flex-col gap-2">
@@ -217,7 +243,10 @@ const Verify: Component = () => {
       </div>
 
       <form onSubmit={handleVerify} class="space-y-6 mt-14">
-        <div class="relative flex justify-between gap-2" onClick={() => inputRef?.focus()}>
+        <div
+          class="relative flex justify-between gap-2"
+          onClick={() => inputRef?.focus()}
+        >
           <input
             ref={inputRef}
             type="tel"
@@ -243,14 +272,20 @@ const Verify: Component = () => {
           />
 
           {Array.from({ length: 6 }).map((_, i) => {
-            const isActive = isFocused() && (code().length === i || (code().length === 6 && i === 5));
+            const isActive =
+              isFocused() &&
+              (code().length === i || (code().length === 6 && i === 5));
             const char = code()[i];
 
             return (
               <div
                 class={cn(
                   "relative w-14 h-16 flex items-center justify-center text-2xl font-extrabold text-blue-950 border rounded-xl transition-all duration-200 pointer-events-none",
-                  isActive ? "bg-white border-blue-900 shadow-[0_0_0_4px_rgba(2,132,199,0.1)]" : char ? "bg-slate-50 border-blue-900" : "bg-slate-50 border-blue-900/10",
+                  isActive
+                    ? "bg-white border-blue-900 shadow-[0_0_0_4px_rgba(2,132,199,0.1)]"
+                    : char
+                      ? "bg-slate-50 border-blue-900"
+                      : "bg-slate-50 border-blue-900/10",
                 )}
               >
                 <Show when={isActive && !char}>
@@ -278,13 +313,18 @@ const Verify: Component = () => {
           </div>
         </Show>
 
-        <SubmitButton type="submit" loading={isSubmitting()} disabled={!isComplete()}>
+        <SubmitButton
+          type="submit"
+          loading={isSubmitting()}
+          disabled={!isComplete()}
+        >
           Hesabını Doğrula
         </SubmitButton>
 
         <div class="text-center mt-6 flex flex-col gap-2">
           <p class="text-xs text-blue-900/60 font-normal bg-blue-50/60 py-2 px-3 rounded-lg inline-block border border-blue-100">
-            Eğer e-postayı göremezsen lütfen spam (gereksiz) klasörünü de kontrol et.
+            Eğer e-postayı göremezsen lütfen spam (gereksiz) klasörünü de
+            kontrol et.
           </p>
 
           <div class="mt-2 text-sm text-center">
@@ -296,7 +336,9 @@ const Verify: Component = () => {
                 </span>
               }
             >
-              <span class="font-normal text-blue-950/60">Kodu almadın mı? </span>
+              <span class="font-normal text-blue-950/60">
+                Kodu almadın mı?{" "}
+              </span>
               <button
                 type="button"
                 onClick={handleResend}
@@ -309,8 +351,13 @@ const Verify: Component = () => {
           </div>
 
           <AuthFooter>
-            <span class="text-sm font-normal text-slate-500">Ya da geri dön. </span>
-            <a href={dynamicLoginRoute} class="text-sm font-semibold text-blue-900 hover:text-blue-950 transition-colors">
+            <span class="text-sm font-normal text-slate-500">
+              Ya da geri dön.{" "}
+            </span>
+            <a
+              href={dynamicLoginRoute}
+              class="text-sm font-semibold text-blue-900 hover:text-blue-950 transition-colors"
+            >
               Giriş sayfası
             </a>
           </AuthFooter>

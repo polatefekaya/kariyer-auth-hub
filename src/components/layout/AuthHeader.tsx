@@ -1,27 +1,34 @@
 import { type Component, Show, splitProps, type JSX, createMemo } from 'solid-js';
 import { cn } from '../../utils/cn';
+import type { AccountType } from '../../types/account';
+import { getDefaultRedirect } from '../../utils/redirectHelper';
 
 interface AuthHeaderProps extends JSX.HTMLAttributes<HTMLDivElement> {
   title: string;
   description?: string;
+  accountType?: AccountType | null;
 }
 
 export const AuthHeader: Component<AuthHeaderProps> = (props) => {
-  const [local, rest] = splitProps(props, ['title', 'description', 'class']);
+  const [local, rest] = splitProps(props, ['title', 'description', 'class', 'accountType']);
 
   const targetUrl = createMemo(() => {
-    if (typeof window === 'undefined') {
+      if (local.accountType) {
+        return getDefaultRedirect(local.accountType);
+      }
+  
+      if (typeof window === 'undefined') {
+        return import.meta.env.VITE_WEB_APP_URL || '/';
+      }
+  
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobileDevice) {
+        return import.meta.env.VITE_APP_URL || import.meta.env.VITE_WEB_APP_URL || '/';
+      }
+  
       return import.meta.env.VITE_WEB_APP_URL || '/';
-    }
-
-    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    if (isMobileDevice) {
-      return import.meta.env.VITE_APP_URL || import.meta.env.VITE_WEB_APP_URL || '/';
-    }
-
-    return import.meta.env.VITE_WEB_APP_URL || '/';
-  });
+    });
 
   return (
     <div 

@@ -157,7 +157,8 @@ const ResetPassword: Component = () => {
       <AuthHeader 
               title={AuthHeaderTexts.resetPassword().title} 
               description={AuthHeaderTexts.resetPassword().description} 
-              class="mb-12"
+        class="mb-12"
+        accountType={resolvedType}
             />
       
       <Show when={state.success}>

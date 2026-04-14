@@ -11,6 +11,7 @@ import { Turnstile } from "../components/Turnstile";
 import { OAuthProviders } from "../components/ui/OAuthProviders";
 import { AccMapById, AccMapByType, type AccountType, type AccountTypeId } from "../types/account";
 import { AuthHeaderTexts } from "../constants/authTexts";
+import { getDefaultRedirect } from "../utils/redirectHelper";
 
 type ValidationState = "idle" | "valid" | "invalid";
 
@@ -153,7 +154,7 @@ const Login: Component = () => {
         url.hash = `access_token=${data.session.access_token}&refresh_token=${data.session.refresh_token}&expires_in=${data.session.expires_in}`;
         window.location.replace(url.toString());
       } else {
-        window.location.href = defaultRedirectUrl;
+        window.location.href = getDefaultRedirect(state.payload.accountType);
       }
     }
 
@@ -172,6 +173,7 @@ const Login: Component = () => {
         title={headerText().title}
         description={headerText().description}
         class="mb-12"
+        accountType={state.payload.accountType}
       />
       <ErrorAlert message={state.errors.global} />
 
