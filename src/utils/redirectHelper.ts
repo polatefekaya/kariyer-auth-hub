@@ -1,11 +1,11 @@
-import { type AccountType } from "../types/account";
+import { type AccountTypeId } from "../types/account";
 
-export const getDefaultRedirect = (type?: AccountType | null): string => {
-  const redirectMap: Record<AccountType, string> = {
-    employee: import.meta.env.VITE_REDIRECT_EMPLOYEE,
-    company: import.meta.env.VITE_REDIRECT_COMPANY,
-    admin: import.meta.env.VITE_REDIRECT_ADMIN,
-    community: import.meta.env.VITE_REDIRECT_COMMUNITY,
+export const getDefaultRedirect = (type?: AccountTypeId | null): string => {
+  const redirectMap: Record<AccountTypeId, string> = {
+    c: import.meta.env.VITE_REDIRECT_EMPLOYEE,
+    b: import.meta.env.VITE_REDIRECT_COMPANY,
+    a: import.meta.env.VITE_REDIRECT_ADMIN,
+    co: import.meta.env.VITE_REDIRECT_COMMUNITY,
   };
   
   return (type ? redirectMap[type] : null) || import.meta.env.VITE_DEFAULT_REDIRECT_URL;
