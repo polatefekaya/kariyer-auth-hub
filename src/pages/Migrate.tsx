@@ -318,7 +318,7 @@ const Migrate: Component = () => {
         title={AuthHeaderTexts.migrate().title}
         description={AuthHeaderTexts.migrate().description}
         class="mb-12"
-        accountType={state.payload.accountType}
+        accountType={AccMapByType[state.payload.accountType!]}
       />
       <ErrorAlert message={state.errors.global} />
 

@@ -93,7 +93,7 @@ const ForgotPassword: Component = () => {
               title={headerText().title}
               description={headerText().description}
         class="mb-12"
-        accountType={resolvedType}
+        accountType={AccMapByType[resolvedType!]}
             />
 
       <Show when={state.success}>

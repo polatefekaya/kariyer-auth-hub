@@ -172,7 +172,7 @@ const Login: Component = () => {
         title={headerText().title}
         description={headerText().description}
         class="mb-12"
-        accountType={state.payload.accountType}
+        accountType={AccMapByType[state.payload.accountType]}
       />
       <ErrorAlert message={state.errors.global} />
 

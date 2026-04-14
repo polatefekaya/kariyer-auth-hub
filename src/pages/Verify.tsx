@@ -226,7 +226,7 @@ const Verify: Component = () => {
         title={AuthHeaderTexts.verify().title}
         description={AuthHeaderTexts.verify().description}
         class="mb-12"
-        accountType={resolvedType}
+        accountType={AccMapByType[resolvedType!]}
       />
 
       <div class="w-full flex flex-col gap-2">

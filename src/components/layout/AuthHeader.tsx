@@ -1,12 +1,12 @@
 import { type Component, Show, splitProps, type JSX, createMemo } from 'solid-js';
 import { cn } from '../../utils/cn';
-import type { AccountType } from '../../types/account';
+import type { AccountType, AccountTypeId } from '../../types/account';
 import { getDefaultRedirect } from '../../utils/redirectHelper';
 
 interface AuthHeaderProps extends JSX.HTMLAttributes<HTMLDivElement> {
   title: string;
   description?: string;
-  accountType?: AccountType | null;
+  accountType?: AccountTypeId | null;
 }
 
 export const AuthHeader: Component<AuthHeaderProps> = (props) => {
