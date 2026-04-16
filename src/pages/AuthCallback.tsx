@@ -35,7 +35,7 @@ const AuthCallback: Component = () => {
   const executeHandoff = async (initialSession: Session) => {
     if (isHandingOff() || !initialSession?.access_token) return;
     setIsHandingOff(true);
-    setStatusText("Arka uç senkronizasyonu bekleniyor...");
+    setStatusText("Senkronizasyon bekleniyor...");
 
     let activeSession = initialSession;
     let accountType = activeSession.user?.user_metadata?.account_type;
