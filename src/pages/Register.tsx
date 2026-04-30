@@ -221,41 +221,6 @@ const Register: Component = () => {
       return;
     }
 
-    setState("status", "phone", "checking");
-    setState("messages", "phone", "Kontrol ediliyor...");
-
-    const timer = setTimeout(async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/register_valid/check`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            phone,
-            type: state.payload.accountType,
-          }),
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success && !result.data.has_duplicates) {
-            setState("status", "phone", "available");
-            setState("messages", "phone", "Telefon numarası kullanılabilir");
-          } else {
-            setState("status", "phone", "taken");
-            setState(
-              "messages",
-              "phone",
-              "Bu telefon numarası zaten kullanımda",
-            );
-          }
-        }
-      } catch (err) {
-        setState("status", "phone", "error");
-        setState("messages", "phone", "Bağlantı hatası, tekrar deneyin");
-      }
-    }, 500);
-
-    onCleanup(() => clearTimeout(timer));
   });
 
   const validFirstName = createMemo<ValidationStatus>(() => {
