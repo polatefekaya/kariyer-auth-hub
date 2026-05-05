@@ -221,7 +221,9 @@ const Register: Component = () => {
       return;
     }
 
-  });
+    setState("status", "phone", "available");
+    setState("messages", "phone", "");
+    });
 
   const validFirstName = createMemo<ValidationStatus>(() => {
     if (!state.payload.firstName) return "idle";
