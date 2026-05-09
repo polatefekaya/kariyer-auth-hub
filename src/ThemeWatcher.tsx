@@ -3,7 +3,6 @@ import {
   theme,
   setTheme,
   readCookieTheme,
-  writeCookieTheme,
   readStoredTheme,
   writeStoredTheme,
   THEME_STORAGE_KEY,
