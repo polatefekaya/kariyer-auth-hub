@@ -192,6 +192,18 @@ const Login: Component = () => {
 
   const mismatchLoginLabel = createMemo(() => AuthHeaderTexts.login(state.mismatchRole ?? "employee").title);
 
+  const mismatchMessage = createMemo(() => {
+    const mismatch = state.mismatchRole;
+    if (!mismatch) return "";
+    const roleLabel: Partial<Record<AccountType, string>> = {
+      employee: "aday",
+      company: "işveren",
+      community: "topluluk",
+    };
+    const label = roleLabel[mismatch] ?? mismatch;
+    return `Bu e-posta adresiyle kayıtlı bir ${label} hesabınız bulunuyor. ${mismatchLoginLabel()} panelinden giriş yapmanız gerekiyor.`;
+  });
+
   const handleNavigateToCorrectLogin = () => {
     const role = state.mismatchRole;
     if (!role) return;
@@ -210,14 +222,14 @@ const Login: Component = () => {
       <ErrorAlert message={state.errors.global} />
 
       <Show when={state.mismatchRole}>
-        <div class="p-3 bg-destructive/[0.08] text-destructive text-sm font-medium rounded-lg border border-destructive/20">
-          <p>Bu hesap bu giriş sayfasına ait değil.</p>
+        <div class="p-3 bg-warning/[0.08] text-warning text-sm font-medium rounded-lg border border-warning/20">
+          <p>{mismatchMessage()}</p>
           <button
             type="button"
             class="mt-1.5 text-primary hover:text-primary-hover text-sm font-semibold transition-colors hover:underline underline-offset-2"
             onClick={handleNavigateToCorrectLogin}
           >
-            {mismatchLoginLabel()} sayfasına git →
+            {mismatchLoginLabel()}'ne git →
           </button>
         </div>
       </Show>
