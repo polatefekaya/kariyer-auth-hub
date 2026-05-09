@@ -21,6 +21,7 @@ import {
   type AccountTypeId,
 } from "../types/account";
 import type { ValidationStatus } from "../types/validation";
+import { theme } from "../stores/theme";
 
 const AccountSelectButton: Component<{
   title: string;
@@ -30,17 +31,17 @@ const AccountSelectButton: Component<{
   <button
     type="button"
     onClick={props.onClick}
-    class="w-full p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-900 transition-all text-left group flex items-center justify-between"
+    class="w-full p-4 bg-card border border-border rounded-xl hover:border-primary transition-all text-left group flex items-center justify-between"
   >
     <div>
-      <div class="text-sm font-bold text-slate-800 group-hover:text-blue-900 transition-colors">
+      <div class="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
         {props.title}
       </div>
-      <div class="text-xs text-blue-950/50 mt-0.5">
+      <div class="text-xs text-foreground/50 mt-0.5">
         {props.description}
       </div>
     </div>
-    <svg class="w-5 h-5 text-slate-300 group-hover:text-blue-900 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <svg class="w-5 h-5 text-muted-foreground/50 group-hover:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
       <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
     </svg>
   </button>
@@ -121,10 +122,10 @@ const Migrate: Component = () => {
       if (resolvedType) {
         setState("payload", "accountType", resolvedType as AccountType);
         setState("ui", "step", 2);
-        return; // We don't need to fetch if we have an explicit lock
+        return;
       }
-    } 
-    
+    }
+
     if (currentEmail) {
       try {
         setState("ui", "isFetchingType", true);
@@ -162,18 +163,18 @@ const Migrate: Component = () => {
       }
     }
   });
-  
+
   const passwordsMatch = createMemo(() => {
     const p = state.payload.password;
     const cp = state.payload.confirmPassword;
     return p.length > 0 && p === cp;
   });
-  
+
   const validConfirmPassword = createMemo<ValidationStatus>(() => {
     if (!state.payload.confirmPassword) return "idle";
     return passwordsMatch() ? "valid" : "invalid";
   });
-  
+
   const validEmail = createMemo<ValidationStatus>(() => {
     if (!state.payload.email) return "idle";
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -296,7 +297,7 @@ const Migrate: Component = () => {
       <button
         type="button"
         onClick={handleBack}
-        class="absolute -top-12 left-0 flex items-center text-sm font-semibold text-blue-950/60 hover:text-blue-900 transition-colors"
+        class="absolute -top-12 left-0 flex items-center text-sm font-semibold text-foreground/60 hover:text-primary transition-colors"
       >
         <svg
           class="w-4 h-4 mr-1"
@@ -324,10 +325,10 @@ const Migrate: Component = () => {
 
       <Show when={state.ui.step === 1 && state.ui.hasCollision}>
         <div class="animate-in fade-in slide-in-from-right-4 duration-300">
-          <div class="mb-8 p-4 bg-amber-50  rounded-xl text-amber-900 text-sm">
+          <div class="mb-8 p-4 bg-warning/[0.1] rounded-xl text-foreground text-sm">
             <div class="flex items-start gap-3">
               <svg
-                class="w-5 h-5 text-amber-600 mt-0.5 shrink-0"
+                class="w-5 h-5 text-warning mt-0.5 shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -348,14 +349,14 @@ const Migrate: Component = () => {
             </div>
           </div>
 
-          <h3 class="text-sm font-semibold text-slate-700 mb-3 px-1">
+          <h3 class="text-sm font-semibold text-foreground mb-3 px-1">
             Devam edilecek hesabı seçin:
           </h3>
 
           <div class="flex flex-col gap-3">
-            <Show 
-              when={state.ui.availableAccounts.length > 0} 
-              fallback={<div class="p-4 text-center text-sm text-slate-500 animate-pulse">Hesaplar yükleniyor...</div>}
+            <Show
+              when={state.ui.availableAccounts.length > 0}
+              fallback={<div class="p-4 text-center text-sm text-muted-foreground animate-pulse">Hesaplar yükleniyor...</div>}
             >
               <For each={state.ui.availableAccounts}>
                 {(role) => {
@@ -371,7 +372,7 @@ const Migrate: Component = () => {
               </For>
             </Show>
           </div>
-          <p class="text-xs text-slate-400 mt-4 text-center">
+          <p class="text-xs text-muted-foreground mt-4 text-center">
             *Diğer hesaba erişim için daha sonra destek talebi
             oluşturabilirsiniz.
           </p>
@@ -384,20 +385,17 @@ const Migrate: Component = () => {
           class="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300"
         >
           <div class="mb-4">
-            {/*<label class="block text-xs font-medium text-slate-500 tracking-wider mb-1">
-              Güncellenecek Hesap
-            </label>*/}
-            <div class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 flex items-center gap-2 ">
+            <div class="w-full px-4 py-3 bg-muted border border-border rounded-xl text-sm font-semibold text-foreground flex items-center gap-2">
               <Show
                 when={!state.ui.isFetchingType}
                 fallback={
-                  <span class="animate-pulse text-slate-400">
+                  <span class="animate-pulse text-muted-foreground">
                     Doğrulanıyor...
                   </span>
                 }
               >
                 <svg
-                  class="w-4 h-4 text-emerald-500"
+                  class="w-4 h-4 text-success"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -459,7 +457,7 @@ const Migrate: Component = () => {
             <div class="py-2 flex justify-center">
               <Turnstile
                 siteKey={turnstileSiteKey}
-                theme="light"
+                theme={theme()}
                 size="flexible"
                 appearance="interaction-only"
                 onVerify={(token) => {
@@ -483,26 +481,26 @@ const Migrate: Component = () => {
           >
             Şifremi Güncelle
           </SubmitButton>
-          <Show 
-            when={state.payload.accountType !== "admin"} 
+          <Show
+            when={state.payload.accountType !== "admin"}
             fallback={
               <AuthFooter>
-                <span class="text-sm font-normal text-slate-500">
+                <span class="text-sm font-normal text-muted-foreground">
                   Yönetici hesapları doğrudan oluşturulamaz.{" "}
                 </span>
-                <a href="/login?type=a" class="text-sm font-semibold text-blue-900 hover:text-blue-950 transition-colors">
+                <a href="/login?type=a" class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors">
                   Giriş sayfasına dön
                 </a>
               </AuthFooter>
             }
           >
             <AuthFooter>
-              <span class="text-sm font-normal text-blue-950/60">
+              <span class="text-sm font-normal text-foreground/60">
                 Farklı bir hesap mı açacaksınız?{" "}
               </span>
               <a
                 href={dynamicRegisterRoute()}
-                class="text-sm font-semibold text-blue-900 hover:text-blue-950 transition-colors"
+                class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors"
               >
                 Kayıt Ol
               </a>

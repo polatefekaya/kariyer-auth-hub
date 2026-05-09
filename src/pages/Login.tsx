@@ -12,6 +12,7 @@ import { OAuthProviders } from "../components/ui/OAuthProviders";
 import { AccMapById, AccMapByType, type AccountType, type AccountTypeId } from "../types/account";
 import { AuthHeaderTexts } from "../constants/authTexts";
 import { getDefaultRedirect } from "../utils/redirectHelper";
+import { theme } from "../stores/theme";
 
 type ValidationState = "idle" | "valid" | "invalid";
 
@@ -20,19 +21,20 @@ const Login: Component = () => {
   const navigate = useNavigate();
 
   const [state, setState] = createStore({
-    payload: { 
-      email: "", 
-      password: "", 
+    payload: {
+      email: "",
+      password: "",
       cfToken: null as string | null,
-      accountType: "employee" as AccountType 
+      accountType: "employee" as AccountType
     },
     errors: { global: null as string | null },
     isSubmitting: false,
     isCheckingLegacy: false,
+    mismatchRole: null as AccountType | null,
   });
-  
+
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
-  const apiUrl = import.meta.env.VITE_API_URL; 
+  const apiUrl = import.meta.env.VITE_API_URL;
 
   onMount(() => {
     const rawRedirect = searchParams.redirect_to;
@@ -57,11 +59,11 @@ const Login: Component = () => {
   createEffect(() => {
       const rawType = searchParams.type;
       const typeParam = Array.isArray(rawType) ? rawType[0] : rawType;
-      
-      const resolvedType = typeParam 
+
+      const resolvedType = typeParam
         ? (AccMapById[typeParam as AccountTypeId] || (typeParam in AccMapByType ? typeParam : "employee"))
         : "employee";
-        
+
       setState("payload", "accountType", resolvedType as AccountType);
     });
 
@@ -89,6 +91,7 @@ const Login: Component = () => {
 
     setState("isSubmitting", true);
     setState("errors", "global", null);
+    setState("mismatchRole", null);
 
     const cleanEmail = state.payload.email.trim().toLowerCase();
     try {
@@ -101,14 +104,35 @@ const Login: Component = () => {
 
       if (legacyCheckRes.ok) {
         const result = await legacyCheckRes.json();
-        const accounts = result.data; 
+        const accounts = result.data;
 
         if (result.success && Array.isArray(accounts) && accounts.length > 0) {
+          const currentRole = state.payload.accountType;
+          const hasMatchingRole = accounts.some((acc: any) => acc.role === currentRole);
+
+          if (!hasMatchingRole) {
+            const hasAdminAccount = accounts.some((acc: any) => acc.role === "admin");
+
+            if (hasAdminAccount) {
+              setState("errors", "global", "Bu mail ile kayıtlı farklı türde bir hesabınız var, lütfen doğru giriş panelini kullanınız.");
+            } else {
+              const mismatchAcc = accounts.find((acc: any) => acc.role !== currentRole)!;
+              setState("mismatchRole", mismatchAcc.role as AccountType);
+            }
+
+            setState("payload", "cfToken", null);
+            if (typeof window !== "undefined" && window.turnstile) {
+              window.turnstile.reset();
+            }
+            setState("isSubmitting", false);
+            return;
+          }
+
           const hasMigratedAccount = accounts.some((acc: any) => acc.is_migrated);
 
           if (!hasMigratedAccount) {
             console.log("[Auth] Unmigrated legacy user detected. Intercepting.");
-            
+
             if (accounts.length > 1) {
               navigate(`/migrate?email=${encodeURIComponent(cleanEmail)}&conflict=true`);
             } else {
@@ -139,7 +163,7 @@ const Login: Component = () => {
 
       setState("errors", "global", "E-posta veya şifre hatalı.");
       setState("payload", "cfToken", null);
-      
+
       if (typeof window !== "undefined" && window.turnstile) {
         window.turnstile.reset();
       }
@@ -166,6 +190,15 @@ const Login: Component = () => {
 
   const headerText = createMemo(() => AuthHeaderTexts.login(state.payload.accountType));
 
+  const mismatchLoginLabel = createMemo(() => AuthHeaderTexts.login(state.mismatchRole ?? "employee").title);
+
+  const handleNavigateToCorrectLogin = () => {
+    const role = state.mismatchRole;
+    if (!role) return;
+    setState("mismatchRole", null);
+    navigate(`/login?type=${AccMapByType[role]}`);
+  };
+
   return (
     <div class="bg-transparent rounded-3xl w-full max-w-sm">
       <AuthHeader
@@ -175,6 +208,19 @@ const Login: Component = () => {
         accountType={AccMapByType[state.payload.accountType]}
       />
       <ErrorAlert message={state.errors.global} />
+
+      <Show when={state.mismatchRole}>
+        <div class="p-3 bg-destructive/[0.08] text-destructive text-sm font-medium rounded-lg border border-destructive/20">
+          <p>Bu hesap bu giriş sayfasına ait değil.</p>
+          <button
+            type="button"
+            class="mt-1.5 text-primary hover:text-primary-hover text-sm font-semibold transition-colors hover:underline underline-offset-2"
+            onClick={handleNavigateToCorrectLogin}
+          >
+            {mismatchLoginLabel()} sayfasına git →
+          </button>
+        </div>
+      </Show>
 
       <form onSubmit={handleLogin} class="space-y-4 mt-8">
         <TextInput
@@ -198,7 +244,7 @@ const Login: Component = () => {
           helperRight={
             <a
               href={dynamicForgotRoute()}
-              class="text-xs font-semibold text-blue-900 hover:text-blue-950 transition-colors"
+              class="text-xs font-semibold text-primary hover:text-primary-hover transition-colors"
             >
               Şifreni mi unuttun?
             </a>
@@ -209,12 +255,11 @@ const Login: Component = () => {
           <div class="py-2 flex justify-center">
             <Turnstile
               siteKey={turnstileSiteKey}
-              theme="light"
+              theme={theme()}
               size="flexible"
               appearance="interaction-only"
               onVerify={(token) => {
                 setState("payload", "cfToken", token);
-                //if (state.errors.global) setState("errors", "global", null);
               }}
               onError={() =>
                 setState("errors", "global", "Güvenlik doğrulama başarısız oldu.")
@@ -232,24 +277,23 @@ const Login: Component = () => {
         </SubmitButton>
 
         <Show when={state.payload.accountType === "employee"}>
-          <OAuthProviders 
-            actionText="Sign In" 
-            onError={(msg) => setState("errors", "global", msg)} 
+          <OAuthProviders
+            actionText="Sign In"
+            onError={(msg) => setState("errors", "global", msg)}
           />
         </Show>
         <Show when={state.payload.accountType !== "admin"}>
-          
-        <AuthFooter>
-          <span class="text-sm font-normal text-blue-950/60">
-            Hesabın yok mu?{" "}
-          </span>
-          <a
-            href={dynamicRegisterRoute()}
-            class="text-sm font-semibold text-blue-900 hover:text-blue-950 transition-colors"
-          >
-            Kayıt ol
-          </a>
-        </AuthFooter>
+          <AuthFooter>
+            <span class="text-sm font-normal text-foreground/60">
+              Hesabın yok mu?{" "}
+            </span>
+            <a
+              href={dynamicRegisterRoute()}
+              class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors"
+            >
+              Kayıt ol
+            </a>
+          </AuthFooter>
         </Show>
       </form>
     </div>

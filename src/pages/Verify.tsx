@@ -22,6 +22,7 @@ import {
   type AccountTypeId,
 } from "../types/account";
 import { getDefaultRedirect } from "../utils/redirectHelper";
+import { theme } from "../stores/theme";
 
 const Verify: Component = () => {
   const [searchParams] = useSearchParams();
@@ -230,12 +231,12 @@ const Verify: Component = () => {
       />
 
       <div class="w-full flex flex-col gap-2">
-        <div class="flex items-center justify-center bg-blue-50/60 text-blue-950/60 p-2 rounded-xl text-sm font-medium">
+        <div class="flex items-center justify-center bg-secondary/60 text-foreground/60 p-2 rounded-xl text-sm font-medium">
           {initialEmail}
         </div>
         <ErrorAlert message={error()} />
         <Show when={successMsg()}>
-          <div class="p-3 mb-4 bg-emerald-50 text-emerald-800 text-sm font-semibold rounded-xl border border-emerald-200 text-center animate-in fade-in duration-300">
+          <div class="p-3 mb-4 bg-success-subtle text-success-subtle-foreground text-sm font-semibold rounded-xl border border-success/20 text-center animate-in fade-in duration-300">
             {successMsg()}
           </div>
         </Show>
@@ -279,16 +280,16 @@ const Verify: Component = () => {
             return (
               <div
                 class={cn(
-                  "relative w-14 h-16 flex items-center justify-center text-2xl font-extrabold text-blue-950 border rounded-xl transition-all duration-200 pointer-events-none",
+                  "relative w-14 h-16 flex items-center justify-center text-2xl font-extrabold text-foreground border rounded-xl transition-all duration-200 pointer-events-none",
                   isActive
-                    ? "bg-white border-blue-900 shadow-[0_0_0_4px_rgba(2,132,199,0.1)]"
+                    ? "bg-background border-primary ring-4 ring-primary/10"
                     : char
-                      ? "bg-slate-50 border-blue-900"
-                      : "bg-slate-50 border-blue-900/10",
+                      ? "bg-muted border-primary"
+                      : "bg-muted border-primary/10",
                 )}
               >
                 <Show when={isActive && !char}>
-                  <div class="w-0.5 h-6 bg-blue-900 animate-pulse rounded-full" />
+                  <div class="w-0.5 h-6 bg-primary animate-pulse rounded-full" />
                 </Show>
                 {char || ""}
               </div>
@@ -300,12 +301,11 @@ const Verify: Component = () => {
           <div class="py-2 flex justify-center">
             <Turnstile
               siteKey={turnstileSiteKey}
-              theme="light"
+              theme={theme()}
               size="flexible"
               appearance="interaction-only"
               onVerify={(token) => {
                 setCfToken(token);
-                //if (error()) setError(null);
               }}
               onError={() => setError("Güvenlik doğrulaması başarısız oldu.")}
             />
@@ -321,7 +321,7 @@ const Verify: Component = () => {
         </SubmitButton>
 
         <div class="text-center mt-6 flex flex-col gap-2">
-          <p class="text-xs text-blue-900/60 font-normal bg-blue-50/60 py-2 px-3 rounded-lg inline-block border border-blue-100">
+          <p class="text-xs text-primary/60 font-normal bg-secondary/60 py-2 px-3 rounded-lg inline-block border border-border">
             Eğer e-postayı göremezsen lütfen spam (gereksiz) klasörünü de
             kontrol et.
           </p>
@@ -330,19 +330,19 @@ const Verify: Component = () => {
             <Show
               when={resendTimer() === 0}
               fallback={
-                <span class="font-medium text-blue-950/50">
+                <span class="font-medium text-foreground/50">
                   {resendTimer()} saniye sonra yeniden gönderebilirsin.
                 </span>
               }
             >
-              <span class="font-normal text-blue-950/60">
+              <span class="font-normal text-foreground/60">
                 Kodu almadın mı?{" "}
               </span>
               <button
                 type="button"
                 onClick={handleResend}
                 disabled={isSubmitting()}
-                class="font-semibold text-blue-900 hover:text-blue-950 transition-colors cursor-pointer disabled:text-blue-950/50 disabled:cursor-not-allowed"
+                class="font-semibold text-primary hover:text-primary-hover transition-colors cursor-pointer disabled:text-foreground/50 disabled:cursor-not-allowed"
               >
                 Yeniden Gönder
               </button>
@@ -350,12 +350,12 @@ const Verify: Component = () => {
           </div>
 
           <AuthFooter>
-            <span class="text-sm font-normal text-slate-500">
+            <span class="text-sm font-normal text-muted-foreground">
               Ya da geri dön.{" "}
             </span>
             <a
               href={dynamicLoginRoute}
-              class="text-sm font-semibold text-blue-900 hover:text-blue-950 transition-colors"
+              class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors"
             >
               Giriş sayfası
             </a>

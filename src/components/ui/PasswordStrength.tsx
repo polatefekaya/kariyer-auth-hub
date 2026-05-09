@@ -35,20 +35,20 @@ export const PasswordStrength: Component<PasswordStrengthProps> = (props) => {
 
   const getColor = (s: number) => {
     switch (s) {
-      case 1: return 'bg-red-500';
-      case 2: return 'bg-orange-500';
+      case 1: return 'bg-destructive';
+      case 2: return 'bg-warning';
       case 3: return 'bg-sky-600';
-      case 4: return 'bg-emerald-500';
-      default: return 'bg-slate-200';
+      case 4: return 'bg-success';
+      default: return 'bg-muted';
     }
   };
 
   const RuleItem: Component<{ met: boolean; text: string }> = (rProps) => (
     <div class="flex items-center gap-2">
-      <svg class={cn("w-3.5 h-3.5 transition-colors duration-200", rProps.met ? "text-emerald-500" : "text-slate-300")} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <svg class={cn("w-3.5 h-3.5 transition-colors duration-200", rProps.met ? "text-success" : "text-muted-foreground/40")} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="20 6 9 17 4 12" />
       </svg>
-      <span class={cn("text-xs font-medium transition-colors duration-200", rProps.met ? "text-slate-700" : "text-slate-400")}>
+      <span class={cn("text-xs font-medium transition-colors duration-200", rProps.met ? "text-foreground" : "text-muted-foreground")}>
         {rProps.text}
       </span>
     </div>
@@ -57,10 +57,10 @@ export const PasswordStrength: Component<PasswordStrengthProps> = (props) => {
   return (
     <div class="flex flex-col gap-2 mt-2 px-1">
       <div class="flex justify-between items-end">
-        <span class="text-xs  text-slate-500">Düzey</span>
+        <span class="text-xs text-muted-foreground">Düzey</span>
         <span class={cn(
           "text-xs font-medium tracking-wider transition-colors duration-200",
-          score() === 0 ? "text-slate-400" : score() < 3 ? "text-orange-600" : "text-emerald-600"
+          score() === 0 ? "text-muted-foreground" : score() < 3 ? "text-warning" : "text-success"
         )}>
           {getLabel(score())}
         </span>
@@ -68,7 +68,7 @@ export const PasswordStrength: Component<PasswordStrengthProps> = (props) => {
 
       <div class="flex gap-1.5 h-1.5 w-full">
         {[1, 2, 3, 4].map((level) => (
-          <div class={cn("h-full flex-1 rounded-sm transition-colors duration-200", score() >= level ? getColor(score()) : "bg-slate-200")} />
+          <div class={cn("h-full flex-1 rounded-sm transition-colors duration-200", score() >= level ? getColor(score()) : "bg-muted")} />
         ))}
       </div>
 

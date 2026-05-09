@@ -10,6 +10,7 @@ import { ErrorAlert } from "../components/ui/ErrorAlert";
 import { Turnstile } from "../components/Turnstile";
 import { AuthHeaderTexts } from "../constants/authTexts";
 import { AccMapById, AccMapByType, type AccountType, type AccountTypeId } from "../types/account";
+import { theme } from "../stores/theme";
 
 type ValidationState = "idle" | "valid" | "invalid";
 
@@ -68,7 +69,7 @@ const ForgotPassword: Component = () => {
 
       setState("error", errorMessage);
       setState("cfToken", null);
-      
+
       if (typeof window !== "undefined" && window.turnstile) {
         window.turnstile.reset();
       }
@@ -98,16 +99,16 @@ const ForgotPassword: Component = () => {
 
       <Show when={state.success}>
         <div class="mt-12 flex flex-col items-center animate-in fade-in zoom-in duration-300">
-          <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
-            <svg class="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <div class="w-16 h-16 bg-success-subtle rounded-full flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
           </div>
-          <p class="text-sm text-slate-500 text-center mb-12">
+          <p class="text-sm text-muted-foreground text-center mb-12">
             Güvenli bağlantıyı buraya gönderdik: <br />
-            <span class="font-bold text-slate-700">{state.email.trim().toLowerCase()}</span>
+            <span class="font-bold text-foreground">{state.email.trim().toLowerCase()}</span>
           </p>
-          <a href={dynamicLoginRoute} class="px-6 py-2 bg-slate-100 text-sm font-bold text-slate-700 hover:bg-slate-200 rounded-lg transition-colors">
+          <a href={dynamicLoginRoute} class="px-6 py-2 bg-secondary text-sm font-bold text-secondary-foreground hover:bg-secondary-hover rounded-lg transition-colors">
             Giriş'e Dön
           </a>
         </div>
@@ -133,12 +134,11 @@ const ForgotPassword: Component = () => {
             <div class="py-2 flex justify-center">
               <Turnstile
                 siteKey={turnstileSiteKey}
-                theme="light"
+                theme={theme()}
                 size="flexible"
                 appearance="interaction-only"
                 onVerify={(token) => {
                   setState("cfToken", token);
-                  //if (state.error) setState("error", null);
                 }}
                 onError={() => setState("error", "Güvenlik doğrulama başarısız oldu.")}
               />
@@ -150,8 +150,8 @@ const ForgotPassword: Component = () => {
           </SubmitButton>
 
           <AuthFooter>
-            <span class="text-sm font-normal text-slate-500">Ya da geri dön. </span>
-            <a href={dynamicLoginRoute} class="text-sm font-semibold text-blue-900 hover:text-blue-950 transition-colors">Giriş sayfası</a>
+            <span class="text-sm font-normal text-muted-foreground">Ya da geri dön. </span>
+            <a href={dynamicLoginRoute} class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors">Giriş sayfası</a>
           </AuthFooter>
         </form>
       </Show>

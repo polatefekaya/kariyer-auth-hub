@@ -123,7 +123,7 @@ const AuthCallback: Component = () => {
         <div class="w-full">
           <AuthHeader title={AuthHeaderTexts.callbackError().title} description={AuthHeaderTexts.callbackError().description} />
           <ErrorAlert message={error()} />
-          <button onClick={() => navigate("/login", { replace: true })} class="mt-6 w-full px-4 py-3 font-semibold bg-blue-900 text-white rounded-xl hover:bg-blue-950 transition-colors">
+          <button onClick={() => navigate("/login", { replace: true })} class="mt-6 w-full px-4 py-3 font-semibold bg-primary text-primary-foreground rounded-xl hover:bg-primary-hover transition-colors">
             Giriş'e dön
           </button>
         </div>
@@ -132,17 +132,17 @@ const AuthCallback: Component = () => {
       <Show when={!error()}>
         <div class="relative flex flex-col items-center justify-center w-full animate-in fade-in duration-500">
            <div class="relative w-20 h-20 mb-8 flex items-center justify-center">
-             <IoReloadOutline class="w-10 h-10 animate-spin text-blue-800" />
+             <IoReloadOutline class="w-10 h-10 animate-spin text-primary" />
            </div>
-          <h2 class="text-xl font-semibold text-blue-900 mb-2">Doğrulanıyor</h2>
-          <p class="text-sm font-medium text-blue-950/50 animate-pulse">{statusText()}</p>
-          
+          <h2 class="text-xl font-semibold text-foreground mb-2">Doğrulanıyor</h2>
+          <p class="text-sm font-medium text-foreground/50 animate-pulse">{statusText()}</p>
+
           <Show when={manualRedirectUrl()}>
             <div class="mt-8 flex flex-col items-center animate-in slide-in-from-bottom-4 fade-in duration-500 w-full gap-4">
-              <p class="text-xs text-center text-blue-950/60 font-normal">
+              <p class="text-xs text-center text-foreground/60 font-normal">
                 Tarayıcı otomatik yönlendirmeyi engellemiş olabilir. Uygulamaya dönmek için tıklayın:
               </p>
-              <a href={manualRedirectUrl()!} class="font-semibold w-full text-center px-4 py-3 bg-blue-900 text-white rounded-xl hover:bg-blue-950 transition-colors">
+              <a href={manualRedirectUrl()!} class="font-semibold w-full text-center px-4 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary-hover transition-colors">
                 Uygulamaya Dön
               </a>
             </div>

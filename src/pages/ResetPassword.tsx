@@ -43,7 +43,7 @@ const ResetPassword: Component = () => {
         if (session) {
           setState('isSessionValid', true);
           setState('isSessionChecking', false);
-          
+
           if (window.history && window.history.replaceState) {
             const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
             window.history.replaceState({}, document.title, cleanUrl);
@@ -74,7 +74,7 @@ const ResetPassword: Component = () => {
   const passwordRules = createMemo<PasswordRules>(() => {
     const p = state.password;
     const score = p ? zxcvbn(p).score : 0;
-    
+
     return {
       hasLength: p.length >= 8 && p.length <= 128,
       hasUpper: /[A-Z]/.test(p),
@@ -130,15 +130,15 @@ const ResetPassword: Component = () => {
     } else {
       setState('success', true);
       setState('isSubmitting', false);
-      
+
       await supabase.auth.signOut();
-      
+
       const rawTypeParam = searchParams.type;
       const typeParam = Array.isArray(rawTypeParam) ? rawTypeParam[0] : rawTypeParam;
       const resolvedType = typeParam ? (AccMapById[typeParam as AccountTypeId] || (typeParam in AccMapByType ? typeParam as AccountType : null)) : null;
 
       const currentTypeParams = resolvedType ? `?type=${AccMapByType[resolvedType]}` : "";
-      
+
       setTimeout(() => {
         navigate(`/login${currentTypeParams}`, { replace: true });
       }, 3000);
@@ -154,15 +154,15 @@ const ResetPassword: Component = () => {
 
   return (
     <div class="bg-transparent rounded-3xl w-full max-w-sm">
-      <AuthHeader 
-              title={AuthHeaderTexts.resetPassword().title} 
-              description={AuthHeaderTexts.resetPassword().description} 
+      <AuthHeader
+              title={AuthHeaderTexts.resetPassword().title}
+              description={AuthHeaderTexts.resetPassword().description}
         class="mb-12"
         accountType={AccMapByType[resolvedType!]}
             />
-      
+
       <Show when={state.success}>
-        <div class="p-4 bg-emerald-50 text-emerald-800 text-sm font-bold rounded-xl border border-emerald-200 text-center mb-6 animate-in fade-in zoom-in duration-300">
+        <div class="p-4 bg-success-subtle text-success-subtle-foreground text-sm font-bold rounded-xl border border-success/20 text-center mb-6 animate-in fade-in zoom-in duration-300">
           Şifreniz başarıyla güncellendi! Giriş ekranına yönlendiriliyorsunuz...
         </div>
       </Show>
@@ -170,28 +170,28 @@ const ResetPassword: Component = () => {
       <Show when={!state.success}>
         <ErrorAlert message={state.error} />
 
-        <Show 
-          when={!state.isSessionChecking} 
+        <Show
+          when={!state.isSessionChecking}
           fallback={
             <div class="flex flex-col items-center justify-center py-8 gap-3">
-              <div class="w-8 h-8 border-4 border-blue-900/20 border-t-blue-900 rounded-full animate-spin"></div>
-              <p class="text-sm text-slate-500 font-medium">Bağlantı doğrulanıyor...</p>
+              <div class="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+              <p class="text-sm text-muted-foreground font-medium">Bağlantı doğrulanıyor...</p>
             </div>
           }
         >
-          <Show 
+          <Show
             when={state.isSessionValid}
             fallback={
               <div class="mt-6 flex flex-col gap-4 items-center">
-                <a 
-                  href="/forgot-password" 
-                  class="w-full px-4 py-3 bg-blue-900 text-white font-bold rounded-xl text-center hover:bg-blue-800 transition-colors"
+                <a
+                  href="/forgot-password"
+                  class="w-full px-4 py-3 bg-primary text-primary-foreground font-bold rounded-xl text-center hover:bg-primary-hover transition-colors"
                 >
                   Yeni Bağlantı Talep Et
                 </a>
                 <AuthFooter>
-                  <span class="text-sm font-normal text-slate-500">Ya da </span>
-                  <a href={dynamicLoginRoute} class="text-sm font-semibold text-blue-900 hover:text-blue-950 transition-colors">Giriş yap</a>
+                  <span class="text-sm font-normal text-muted-foreground">Ya da </span>
+                  <a href={dynamicLoginRoute} class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors">Giriş yap</a>
                 </AuthFooter>
               </div>
             }
@@ -224,18 +224,18 @@ const ResetPassword: Component = () => {
                 disabled={state.isSubmitting}
               />
 
-              <SubmitButton 
-                type="submit" 
-                loading={state.isSubmitting} 
+              <SubmitButton
+                type="submit"
+                loading={state.isSubmitting}
                 disabled={isSubmitDisabled()}
                 class="mt-12"
               >
                 Şifreni Güncelle
               </SubmitButton>
-              
+
               <AuthFooter>
-                <span class="text-sm font-normal text-slate-500">Ya da geri dön. </span>
-                <a href={dynamicLoginRoute} class="text-sm font-semibold text-blue-900 hover:text-blue-950 transition-colors">Giriş sayfası</a>
+                <span class="text-sm font-normal text-muted-foreground">Ya da geri dön. </span>
+                <a href={dynamicLoginRoute} class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors">Giriş sayfası</a>
               </AuthFooter>
             </form>
           </Show>
