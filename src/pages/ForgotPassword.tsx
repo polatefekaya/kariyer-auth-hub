@@ -9,16 +9,22 @@ import { SubmitButton } from "../components/ui/SubmitButton";
 import { ErrorAlert } from "../components/ui/ErrorAlert";
 import { Turnstile } from "../components/Turnstile";
 import { AuthHeaderTexts } from "../constants/authTexts";
-import { AccMapById, AccMapByType, type AccountType, type AccountTypeId } from "../types/account";
+import { AccMapByType } from "../types/account";
 import { theme } from "../stores/theme";
+import { resetTurnstile } from "../utils/turnstile";
+import { useAccountType } from "../hooks/useAccountType";
 
 type ValidationState = "idle" | "valid" | "invalid";
 
 const ForgotPassword: Component = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { resolvedType, currentTypeParam } = useAccountType();
+
+  const emailFromQuery = searchParams.email;
+  if (emailFromQuery) setSearchParams({ email: undefined });
 
   const [state, setState] = createStore({
-    email: "",
+    email: typeof emailFromQuery === "string" ? emailFromQuery : "",
     cfToken: null as string | null,
     error: null as string | null,
     success: false,
@@ -52,7 +58,7 @@ const ForgotPassword: Component = () => {
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
       cleanEmail,
       {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/reset-password${currentTypeParam()}`,
         captchaToken: state.cfToken || undefined,
       },
     );
@@ -69,10 +75,7 @@ const ForgotPassword: Component = () => {
 
       setState("error", errorMessage);
       setState("cfToken", null);
-
-      if (typeof window !== "undefined" && window.turnstile) {
-        window.turnstile.reset();
-      }
+      resetTurnstile();
     } else {
       setState("success", true);
     }
@@ -80,22 +83,17 @@ const ForgotPassword: Component = () => {
     setState("isSubmitting", false);
   };
 
-  const rawTypeParam = searchParams.type;
-  const typeParam = Array.isArray(rawTypeParam) ? rawTypeParam[0] : rawTypeParam;
-  const resolvedType = typeParam ? (AccMapById[typeParam as AccountTypeId] || (typeParam in AccMapByType ? typeParam as AccountType : null)) : null;
-
-  const currentTypeParams = resolvedType ? `?type=${AccMapByType[resolvedType]}` : "";
-  const dynamicLoginRoute = `/login${currentTypeParams}`;
+  const dynamicLoginRoute = () => `/login${currentTypeParam()}`;
   const headerText = createMemo(() => AuthHeaderTexts.forgotPassword(state.success));
 
   return (
     <div class="bg-transparent rounded-3xl w-full max-w-sm">
       <AuthHeader
-              title={headerText().title}
-              description={headerText().description}
+        title={headerText().title}
+        description={headerText().description}
         class="mb-12"
-        accountType={AccMapByType[resolvedType!]}
-            />
+        accountType={resolvedType() ? AccMapByType[resolvedType()!] : undefined}
+      />
 
       <Show when={state.success}>
         <div class="mt-12 flex flex-col items-center animate-in fade-in zoom-in duration-300">
@@ -108,7 +106,7 @@ const ForgotPassword: Component = () => {
             Güvenli bağlantıyı buraya gönderdik: <br />
             <span class="font-bold text-foreground">{state.email.trim().toLowerCase()}</span>
           </p>
-          <a href={dynamicLoginRoute} class="px-6 py-2 bg-secondary text-sm font-bold text-secondary-foreground hover:bg-secondary-hover rounded-lg transition-colors">
+          <a href={dynamicLoginRoute()} class="px-6 py-2 bg-secondary text-sm font-bold text-secondary-foreground hover:bg-secondary-hover rounded-lg transition-colors">
             Giriş'e Dön
           </a>
         </div>
@@ -151,7 +149,7 @@ const ForgotPassword: Component = () => {
 
           <AuthFooter>
             <span class="text-sm font-normal text-muted-foreground">Ya da geri dön. </span>
-            <a href={dynamicLoginRoute} class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors">Giriş sayfası</a>
+            <a href={dynamicLoginRoute()} class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors">Giriş sayfası</a>
           </AuthFooter>
         </form>
       </Show>

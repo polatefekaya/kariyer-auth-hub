@@ -1,7 +1,6 @@
 import { type Component, createMemo, onMount, Show, For } from "solid-js";
 import { createStore } from "solid-js/store";
 import { useSearchParams, useNavigate } from "@solidjs/router";
-import { zxcvbn } from "@zxcvbn-ts/core";
 import { supabase } from "../lib/supabase";
 import { AuthHeader } from "../components/layout/AuthHeader";
 import { AuthFooter } from "../components/layout/AuthFooter";
@@ -22,6 +21,8 @@ import {
 } from "../types/account";
 import type { ValidationStatus } from "../types/validation";
 import { theme } from "../stores/theme";
+import { computePasswordRules } from "../utils/passwordValidation";
+import { resetTurnstile } from "../utils/turnstile";
 
 const AccountSelectButton: Component<{
   title: string;
@@ -181,24 +182,9 @@ const Migrate: Component = () => {
     return emailRegex.test(state.payload.email.trim()) ? "valid" : "invalid";
   });
 
-  const passwordRules = createMemo<PasswordRules>(() => {
-    const p = state.payload.password;
-    const score = p ? zxcvbn(p).score : 0;
-    return {
-      hasLength: p.length >= 8 && p.length <= 128,
-      hasUpper: /[A-Z]/.test(p),
-      hasNumber: /[0-9]/.test(p),
-      hasSpecial: /[^A-Za-z0-9]/.test(p),
-      hasScore: score >= 3,
-      isAllValid:
-        p.length >= 8 &&
-        p.length <= 128 &&
-        /[A-Z]/.test(p) &&
-        /[0-9]/.test(p) &&
-        /[^A-Za-z0-9]/.test(p) &&
-        score >= 3,
-    };
-  });
+  const passwordRules = createMemo<PasswordRules>(() =>
+    computePasswordRules(state.payload.password)
+  );
 
   const validPassword = createMemo<ValidationStatus>(() => {
     if (!state.payload.password) return "idle";
@@ -273,10 +259,7 @@ const Migrate: Component = () => {
 
       setState("errors", "global", errorMessage);
       setState("payload", "cfToken", null);
-
-      if (typeof window !== "undefined" && window.turnstile) {
-        window.turnstile.reset();
-      }
+      resetTurnstile();
     } else {
       console.log("Migration initiated for:", data.user?.id);
       navigate(`/verify?email=${encodeURIComponent(cleanEmail)}`, {

@@ -8,7 +8,6 @@ import {
 } from "solid-js";
 import { createStore } from "solid-js/store";
 import { useSearchParams, useNavigate } from "@solidjs/router";
-import { zxcvbn } from "@zxcvbn-ts/core";
 import { supabase } from "../lib/supabase";
 import { AuthHeader } from "../components/layout/AuthHeader";
 import { AuthFooter } from "../components/layout/AuthFooter";
@@ -22,14 +21,13 @@ import {
   type PasswordRules,
 } from "../components/ui/PasswordStrength";
 import { OAuthProviders } from "../components/ui/OAuthProviders";
-import {
-  AccMapById,
-  AccMapByType,
-  type AccountType,
-  type AccountTypeId,
-} from "../types/account";
+import { AccMapByType, type AccountType } from "../types/account";
 import type { ValidationStatus } from "../types/validation";
 import { theme } from "../stores/theme";
+import { computePasswordRules } from "../utils/passwordValidation";
+import { resetTurnstile } from "../utils/turnstile";
+import { saveAuthRedirect } from "../utils/sessionRedirect";
+import { useAccountType } from "../hooks/useAccountType";
 
 const CustomCheckbox: Component<{
   checked: boolean;
@@ -79,6 +77,7 @@ const CustomCheckbox: Component<{
 const Register: Component = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { resolvedType, currentTypeParam } = useAccountType("employee");
 
   const [state, setState] = createStore({
     payload: {
@@ -115,7 +114,7 @@ const Register: Component = () => {
     const rawRedirect = searchParams.redirect_to;
     const appRedirect = Array.isArray(rawRedirect) ? rawRedirect[0] : rawRedirect;
     if (appRedirect) {
-      sessionStorage.setItem("kariyer_auth_redirect", appRedirect);
+      saveAuthRedirect(appRedirect);
       setSearchParams({ redirect_to: undefined }, { replace: true });
     }
 
@@ -129,34 +128,14 @@ const Register: Component = () => {
     }
   });
 
-  const passwordsMatch = createMemo(() => {
-    return (
-      state.payload.password.length > 0 &&
-      state.payload.password === state.payload.confirmPassword
-    );
-  });
-
-  const validConfirmPassword = createMemo<ValidationStatus>(() => {
-    if (!state.payload.confirmPassword) return "idle";
-    return passwordsMatch() ? "valid" : "invalid";
-  });
-
   createEffect(() => {
-    const rawType = searchParams.type;
-    const typeParam = Array.isArray(rawType) ? rawType[0] : rawType;
-
-    const resolvedType = typeParam
-      ? AccMapById[typeParam as AccountTypeId] ||
-        (typeParam in AccMapByType ? typeParam : "employee")
-      : "employee";
-
-    if (resolvedType === "admin" || resolvedType === "community") {
-      console.warn(`[Security] Blocked public registration attempt for type: ${resolvedType}`);
-      navigate(`/login?type=${AccMapByType[resolvedType]}&error=İşlem Reddedildi&error_description=Yönetici kaydı buradan yapılamaz.`, { replace: true });
+    const type = resolvedType();
+    if (type === "admin" || type === "community") {
+      console.warn(`[Security] Blocked public registration attempt for type: ${type}`);
+      navigate(`/login?type=${AccMapByType[type]}&error=İşlem Reddedildi&error_description=Yönetici kaydı buradan yapılamaz.`, { replace: true });
       return;
     }
-
-    setState("payload", "accountType", resolvedType as AccountType);
+    setState("payload", "accountType", type ?? "employee");
   });
 
   createEffect(() => {
@@ -177,15 +156,15 @@ const Register: Component = () => {
     setState("status", "email", "checking");
     setState("messages", "email", "Kontrol ediliyor...");
 
+    const controller = new AbortController();
+
     const timer = setTimeout(async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/register_valid/check`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email,
-            type: state.payload.accountType,
-          }),
+          body: JSON.stringify({ email, type: state.payload.accountType }),
+          signal: controller.signal,
         });
 
         if (response.ok) {
@@ -199,12 +178,17 @@ const Register: Component = () => {
           }
         }
       } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
         setState("status", "email", "error");
         setState("messages", "email", "Bağlantı hatası, tekrar deneyin");
       }
     }, 500);
 
-    onCleanup(() => clearTimeout(timer));
+    // onCleanup cancels both the pending timeout and any in-flight request
+    onCleanup(() => {
+      clearTimeout(timer);
+      controller.abort();
+    });
   });
 
   createEffect(() => {
@@ -224,7 +208,7 @@ const Register: Component = () => {
 
     setState("status", "phone", "available");
     setState("messages", "phone", "");
-    });
+  });
 
   const validFirstName = createMemo<ValidationStatus>(() => {
     if (!state.payload.firstName) return "idle";
@@ -236,25 +220,21 @@ const Register: Component = () => {
     return state.payload.lastName.trim().length >= 2 ? "valid" : "invalid";
   });
 
-  const passwordRules = createMemo<PasswordRules>(() => {
-    const p = state.payload.password;
-    const score = p ? zxcvbn(p).score : 0;
-
-    return {
-      hasLength: p.length >= 8 && p.length <= 128,
-      hasUpper: /[A-Z]/.test(p),
-      hasNumber: /[0-9]/.test(p),
-      hasSpecial: /[^A-Za-z0-9]/.test(p),
-      hasScore: score >= 3,
-      isAllValid:
-        p.length >= 8 &&
-        p.length <= 128 &&
-        /[A-Z]/.test(p) &&
-        /[0-9]/.test(p) &&
-        /[^A-Za-z0-9]/.test(p) &&
-        score >= 3,
-    };
+  const passwordsMatch = createMemo(() => {
+    return (
+      state.payload.password.length > 0 &&
+      state.payload.password === state.payload.confirmPassword
+    );
   });
+
+  const validConfirmPassword = createMemo<ValidationStatus>(() => {
+    if (!state.payload.confirmPassword) return "idle";
+    return passwordsMatch() ? "valid" : "invalid";
+  });
+
+  const passwordRules = createMemo<PasswordRules>(() =>
+    computePasswordRules(state.payload.password)
+  );
 
   const validPassword = createMemo<ValidationStatus>(() => {
     if (!state.payload.password) return "idle";
@@ -321,18 +301,14 @@ const Register: Component = () => {
 
       setState("errors", "global", errorMessage);
       setState("payload", "cfToken", null);
-      if (typeof window !== "undefined" && window.turnstile) {
-        window.turnstile.reset();
-      }
+      resetTurnstile();
     } else if (data.user?.identities?.length === 0) {
       setState("errors", "global", "Bu hesap zaten kullanımda. Lütfen giriş yapmayı deneyin.");
       setState("payload", "cfToken", null);
-      if (typeof window !== "undefined" && window.turnstile) {
-        window.turnstile.reset();
-      }
+      resetTurnstile();
     } else {
       const onboardingUrl = `${WEB_APP_URL}/onboarding/${state.payload.accountType}`;
-      sessionStorage.setItem("kariyer_auth_redirect", onboardingUrl);
+      saveAuthRedirect(onboardingUrl);
       navigate(`/verify?email=${encodeURIComponent(cleanEmail)}`, {
         replace: true,
       });
@@ -341,8 +317,7 @@ const Register: Component = () => {
     setState("isSubmitting", false);
   };
 
-  const currentTypeParams = () => `?type=${AccMapByType[state.payload.accountType]}`;
-  const dynamicLoginRoute = () => `/login${currentTypeParams()}`;
+  const dynamicLoginRoute = () => `/login${currentTypeParam()}`;
   const headerText = createMemo(() => AuthHeaderTexts.register(state.payload.accountType));
 
   return (

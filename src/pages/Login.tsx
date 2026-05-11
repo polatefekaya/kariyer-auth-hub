@@ -9,16 +9,20 @@ import { SubmitButton } from "../components/ui/SubmitButton";
 import { ErrorAlert } from "../components/ui/ErrorAlert";
 import { Turnstile } from "../components/Turnstile";
 import { OAuthProviders } from "../components/ui/OAuthProviders";
-import { AccMapById, AccMapByType, type AccountType, type AccountTypeId } from "../types/account";
+import { AccMapByType, type AccountType } from "../types/account";
 import { AuthHeaderTexts } from "../constants/authTexts";
 import { getDefaultRedirect } from "../utils/redirectHelper";
 import { theme } from "../stores/theme";
+import { resetTurnstile } from "../utils/turnstile";
+import { saveAuthRedirect, getAuthRedirect, clearAuthRedirect } from "../utils/sessionRedirect";
+import { useAccountType } from "../hooks/useAccountType";
 
 type ValidationState = "idle" | "valid" | "invalid";
 
 const Login: Component = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { resolvedType: accountTypeFromUrl, currentTypeParam } = useAccountType("employee");
 
   const [state, setState] = createStore({
     payload: {
@@ -40,7 +44,7 @@ const Login: Component = () => {
     const rawRedirect = searchParams.redirect_to;
     const appRedirect = Array.isArray(rawRedirect) ? rawRedirect[0] : rawRedirect;
     if (appRedirect) {
-      sessionStorage.setItem("kariyer_auth_redirect", appRedirect);
+      saveAuthRedirect(appRedirect);
       setSearchParams({ redirect_to: undefined }, { replace: true });
     }
 
@@ -57,15 +61,8 @@ const Login: Component = () => {
   });
 
   createEffect(() => {
-      const rawType = searchParams.type;
-      const typeParam = Array.isArray(rawType) ? rawType[0] : rawType;
-
-      const resolvedType = typeParam
-        ? (AccMapById[typeParam as AccountTypeId] || (typeParam in AccMapByType ? typeParam : "employee"))
-        : "employee";
-
-      setState("payload", "accountType", resolvedType as AccountType);
-    });
+    setState("payload", "accountType", accountTypeFromUrl() ?? "employee");
+  });
 
   const validEmail = createMemo<ValidationState>(() => {
     if (!state.payload.email) return "idle";
@@ -121,9 +118,7 @@ const Login: Component = () => {
             }
 
             setState("payload", "cfToken", null);
-            if (typeof window !== "undefined" && window.turnstile) {
-              window.turnstile.reset();
-            }
+            resetTurnstile();
             setState("isSubmitting", false);
             return;
           }
@@ -163,16 +158,12 @@ const Login: Component = () => {
 
       setState("errors", "global", "E-posta veya şifre hatalı.");
       setState("payload", "cfToken", null);
-
-      if (typeof window !== "undefined" && window.turnstile) {
-        window.turnstile.reset();
-      }
+      resetTurnstile();
     } else {
-      console.log("User logged in:", data.user?.id);
-      const intendedTarget = sessionStorage.getItem("kariyer_auth_redirect");
+      const intendedTarget = getAuthRedirect();
 
       if (intendedTarget) {
-        sessionStorage.removeItem("kariyer_auth_redirect");
+        clearAuthRedirect();
         const url = new URL(intendedTarget);
         url.hash = `access_token=${data.session.access_token}&refresh_token=${data.session.refresh_token}&expires_in=${data.session.expires_in}`;
         window.location.replace(url.toString());
@@ -184,9 +175,8 @@ const Login: Component = () => {
     setState("isSubmitting", false);
   };
 
-  const currentTypeParams = () => `?type=${AccMapByType[state.payload.accountType]}`;
-  const dynamicRegisterRoute = () => `/register${currentTypeParams()}`;
-  const dynamicForgotRoute = () => `/forgot-password${currentTypeParams()}`;
+  const dynamicRegisterRoute = () => `/register${currentTypeParam()}`;
+  const dynamicForgotRoute = () => `/forgot-password${currentTypeParam()}`;
 
   const headerText = createMemo(() => AuthHeaderTexts.login(state.payload.accountType));
 

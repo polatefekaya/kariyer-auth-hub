@@ -1,7 +1,6 @@
 import { type Component, createMemo, onMount, Show, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
-import { useSearchParams, useNavigate } from '@solidjs/router';
-import { zxcvbn } from '@zxcvbn-ts/core';
+import { useNavigate } from '@solidjs/router';
 import { supabase } from '../lib/supabase';
 import { AuthHeader } from '../components/layout/AuthHeader';
 import { TextInput } from '../components/ui/TextInput';
@@ -10,13 +9,15 @@ import { ErrorAlert } from '../components/ui/ErrorAlert';
 import { PasswordStrength, type PasswordRules } from '../components/ui/PasswordStrength';
 import { AuthFooter } from '../components/layout/AuthFooter';
 import { AuthHeaderTexts } from "../constants/authTexts";
-import { AccMapById, AccMapByType, type AccountType, type AccountTypeId } from "../types/account";
+import { AccMapByType } from "../types/account";
+import { computePasswordRules } from '../utils/passwordValidation';
+import { useAccountType } from '../hooks/useAccountType';
 
 type ValidationState = 'idle' | 'valid' | 'invalid';
 
 const ResetPassword: Component = () => {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { resolvedType, currentTypeParam } = useAccountType();
 
   const [state, setState] = createStore({
     password: '',
@@ -28,10 +29,15 @@ const ResetPassword: Component = () => {
     isSessionValid: false,
   });
 
+  const dynamicLoginRoute = () => `/login${currentTypeParam()}`;
+  const dynamicForgotRoute = () => `/forgot-password${currentTypeParam()}`;
+
   onMount(() => {
     const hash = window.location.hash;
     const isImplicitFlow = hash.includes('type=recovery') || hash.includes('access_token=');
-    const isPkceFlow = !!searchParams.code;
+
+    // searchParams is reactive so read the code param via the URL directly at mount time
+    const isPkceFlow = !!new URLSearchParams(window.location.search).get('code');
 
     if (!isImplicitFlow && !isPkceFlow) {
       navigate('/login', { replace: true });
@@ -44,8 +50,8 @@ const ResetPassword: Component = () => {
           setState('isSessionValid', true);
           setState('isSessionChecking', false);
 
-          if (window.history && window.history.replaceState) {
-            const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+          if (window.history?.replaceState) {
+            const cleanUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
             window.history.replaceState({}, document.title, cleanUrl);
           }
         }
@@ -71,19 +77,9 @@ const ResetPassword: Component = () => {
     });
   });
 
-  const passwordRules = createMemo<PasswordRules>(() => {
-    const p = state.password;
-    const score = p ? zxcvbn(p).score : 0;
-
-    return {
-      hasLength: p.length >= 8 && p.length <= 128,
-      hasUpper: /[A-Z]/.test(p),
-      hasNumber: /[0-9]/.test(p),
-      hasSpecial: /[^A-Za-z0-9]/.test(p),
-      hasScore: score >= 3,
-      isAllValid: p.length >= 8 && p.length <= 128 && /[A-Z]/.test(p) && /[0-9]/.test(p) && /[^A-Za-z0-9]/.test(p) && score >= 3
-    };
-  });
+  const passwordRules = createMemo<PasswordRules>(() =>
+    computePasswordRules(state.password)
+  );
 
   const validPassword = createMemo<ValidationState>(() => {
     if (!state.password) return 'idle';
@@ -133,33 +129,20 @@ const ResetPassword: Component = () => {
 
       await supabase.auth.signOut();
 
-      const rawTypeParam = searchParams.type;
-      const typeParam = Array.isArray(rawTypeParam) ? rawTypeParam[0] : rawTypeParam;
-      const resolvedType = typeParam ? (AccMapById[typeParam as AccountTypeId] || (typeParam in AccMapByType ? typeParam as AccountType : null)) : null;
-
-      const currentTypeParams = resolvedType ? `?type=${AccMapByType[resolvedType]}` : "";
-
       setTimeout(() => {
-        navigate(`/login${currentTypeParams}`, { replace: true });
+        navigate(`/login${currentTypeParam()}`, { replace: true });
       }, 3000);
     }
   };
 
-  const rawTypeParam = searchParams.type;
-  const typeParam = Array.isArray(rawTypeParam) ? rawTypeParam[0] : rawTypeParam;
-  const resolvedType = typeParam ? (AccMapById[typeParam as AccountTypeId] || (typeParam in AccMapByType ? typeParam as AccountType : null)) : null;
-
-  const currentTypeParams = resolvedType ? `?type=${AccMapByType[resolvedType]}` : "";
-  const dynamicLoginRoute = `/login${currentTypeParams}`;
-
   return (
     <div class="bg-transparent rounded-3xl w-full max-w-sm">
       <AuthHeader
-              title={AuthHeaderTexts.resetPassword().title}
-              description={AuthHeaderTexts.resetPassword().description}
+        title={AuthHeaderTexts.resetPassword().title}
+        description={AuthHeaderTexts.resetPassword().description}
         class="mb-12"
-        accountType={AccMapByType[resolvedType!]}
-            />
+        accountType={resolvedType() ? AccMapByType[resolvedType()!] : undefined}
+      />
 
       <Show when={state.success}>
         <div class="p-4 bg-success-subtle text-success-subtle-foreground text-sm font-bold rounded-xl border border-success/20 text-center mb-6 animate-in fade-in zoom-in duration-300">
@@ -184,14 +167,14 @@ const ResetPassword: Component = () => {
             fallback={
               <div class="mt-6 flex flex-col gap-4 items-center">
                 <a
-                  href="/forgot-password"
+                  href={dynamicForgotRoute()}
                   class="w-full px-4 py-3 bg-primary text-primary-foreground font-bold rounded-xl text-center hover:bg-primary-hover transition-colors"
                 >
                   Yeni Bağlantı Talep Et
                 </a>
                 <AuthFooter>
                   <span class="text-sm font-normal text-muted-foreground">Ya da </span>
-                  <a href={dynamicLoginRoute} class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors">Giriş yap</a>
+                  <a href={dynamicLoginRoute()} class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors">Giriş yap</a>
                 </AuthFooter>
               </div>
             }
@@ -235,7 +218,7 @@ const ResetPassword: Component = () => {
 
               <AuthFooter>
                 <span class="text-sm font-normal text-muted-foreground">Ya da geri dön. </span>
-                <a href={dynamicLoginRoute} class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors">Giriş sayfası</a>
+                <a href={dynamicLoginRoute()} class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors">Giriş sayfası</a>
               </AuthFooter>
             </form>
           </Show>

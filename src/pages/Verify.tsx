@@ -6,7 +6,7 @@ import {
   createSignal,
   onCleanup,
 } from "solid-js";
-import { useSearchParams, useNavigate } from "@solidjs/router";
+import { useNavigate } from "@solidjs/router";
 import { supabase } from "../lib/supabase";
 import { AuthHeader } from "../components/layout/AuthHeader";
 import { SubmitButton } from "../components/ui/SubmitButton";
@@ -15,18 +15,18 @@ import { Turnstile } from "../components/Turnstile";
 import { cn } from "../utils/cn";
 import { AuthFooter } from "../components/layout/AuthFooter";
 import { AuthHeaderTexts } from "../constants/authTexts";
-import {
-  AccMapById,
-  AccMapByType,
-  type AccountType,
-  type AccountTypeId,
-} from "../types/account";
+import { AccMapByType } from "../types/account";
 import { getDefaultRedirect } from "../utils/redirectHelper";
 import { theme } from "../stores/theme";
+import { resetTurnstile } from "../utils/turnstile";
+import { getAuthRedirect, clearAuthRedirect } from "../utils/sessionRedirect";
+import { useAccountType } from "../hooks/useAccountType";
+import { useSearchParams } from "@solidjs/router";
 
 const Verify: Component = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { resolvedType, currentTypeParam } = useAccountType();
 
   const rawEmail = searchParams.email;
   let initialEmail = "";
@@ -51,21 +51,11 @@ const Verify: Component = () => {
   const [isFocused, setIsFocused] = createSignal(false);
 
   let inputRef!: HTMLInputElement;
+  let resendInterval: ReturnType<typeof setInterval> | null = null;
+
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
-  const rawTypeParam = searchParams.type;
-  const typeParam = Array.isArray(rawTypeParam)
-    ? rawTypeParam[0]
-    : rawTypeParam;
-  const resolvedType = typeParam
-    ? AccMapById[typeParam as AccountTypeId] ||
-      (typeParam in AccMapByType ? (typeParam as AccountType) : null)
-    : null;
-
-  const currentTypeParams = resolvedType
-    ? `?type=${AccMapByType[resolvedType]}`
-    : "";
-  const dynamicLoginRoute = `/login${currentTypeParams}`;
+  const dynamicLoginRoute = () => `/login${currentTypeParam()}`;
 
   onMount(() => {
     if (!initialEmail) {
@@ -75,6 +65,10 @@ const Verify: Component = () => {
     setTimeout(() => {
       if (inputRef) inputRef.focus();
     }, 100);
+  });
+
+  onCleanup(() => {
+    if (resendInterval !== null) clearInterval(resendInterval);
   });
 
   const handleInput = (e: Event) => {
@@ -112,12 +106,6 @@ const Verify: Component = () => {
     return true;
   });
 
-  const resetTurnstile = () => {
-    if (typeof window !== "undefined" && window.turnstile) {
-      window.turnstile.reset();
-    }
-  };
-
   const handleVerify = async (e: Event) => {
     e.preventDefault();
     if (!isComplete()) return;
@@ -149,13 +137,13 @@ const Verify: Component = () => {
       resetTurnstile();
       inputRef?.focus();
     } else if (data.session) {
-      console.log("Verified user:", data.user?.id);
-
-      const intendedTarget = sessionStorage.getItem("kariyer_auth_redirect");
-      const targetRedirect = getDefaultRedirect(typeParam as AccountTypeId);
+      const intendedTarget = getAuthRedirect();
+      const targetRedirect = getDefaultRedirect(
+        resolvedType() ? AccMapByType[resolvedType()!] : undefined
+      );
 
       if (intendedTarget) {
-        sessionStorage.removeItem("kariyer_auth_redirect");
+        clearAuthRedirect();
         try {
           const url = new URL(intendedTarget);
           url.hash = `access_token=${data.session.access_token}&refresh_token=${data.session.refresh_token}&expires_in=${data.session.expires_in}`;
@@ -181,16 +169,24 @@ const Verify: Component = () => {
 
     setError(null);
     setSuccessMsg(null);
-    setResendTimer(60);
 
-    const interval = setInterval(() => {
+    // Clear any existing interval before starting a new one
+    if (resendInterval !== null) {
+      clearInterval(resendInterval);
+      resendInterval = null;
+    }
+
+    setResendTimer(60);
+    resendInterval = setInterval(() => {
       setResendTimer((prev) => {
-        if (prev <= 1) clearInterval(interval);
+        if (prev <= 1) {
+          clearInterval(resendInterval!);
+          resendInterval = null;
+          return 0;
+        }
         return prev - 1;
       });
     }, 1000);
-
-    onCleanup(() => clearInterval(interval));
 
     const { error: resendError } = await supabase.auth.resend({
       type: "signup",
@@ -213,7 +209,10 @@ const Verify: Component = () => {
 
       setError(errorMessage);
       setResendTimer(0);
-      clearInterval(interval);
+      if (resendInterval !== null) {
+        clearInterval(resendInterval);
+        resendInterval = null;
+      }
       setCfToken(null);
       resetTurnstile();
     } else {
@@ -227,7 +226,7 @@ const Verify: Component = () => {
         title={AuthHeaderTexts.verify().title}
         description={AuthHeaderTexts.verify().description}
         class="mb-12"
-        accountType={AccMapByType[resolvedType!]}
+        accountType={resolvedType() ? AccMapByType[resolvedType()!] : undefined}
       />
 
       <div class="w-full flex flex-col gap-2">
@@ -354,7 +353,7 @@ const Verify: Component = () => {
               Ya da geri dön.{" "}
             </span>
             <a
-              href={dynamicLoginRoute}
+              href={dynamicLoginRoute()}
               class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors"
             >
               Giriş sayfası

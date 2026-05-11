@@ -7,6 +7,7 @@ import { ErrorAlert } from "../components/ui/ErrorAlert";
 import { ALLOWED_ORIGINS } from "../types/config";
 import { AuthHeaderTexts } from "../constants/authTexts";
 import { IoReloadOutline } from "solid-icons/io";
+import { getAuthRedirect, clearAuthRedirect } from "../utils/sessionRedirect";
 
 const AuthCallback: Component = () => {
   const navigate = useNavigate();
@@ -69,7 +70,7 @@ const AuthCallback: Component = () => {
 
     const finalQueryParams = new URLSearchParams(window.location.search);
     const urlPreservedTarget = finalQueryParams.get("next");
-    const storageTarget = sessionStorage.getItem("kariyer_auth_redirect");
+    const storageTarget = getAuthRedirect();
     const safeTargetUrl = validateRedirectTarget(urlPreservedTarget || storageTarget);
 
     try {
@@ -77,7 +78,7 @@ const AuthCallback: Component = () => {
       url.hash = `access_token=${activeSession.access_token}&refresh_token=${activeSession.refresh_token}`;
       const finalUrl = url.toString();
 
-      sessionStorage.removeItem("kariyer_auth_redirect");
+      clearAuthRedirect();
       sessionStorage.removeItem("kariyer_oauth_type");
 
       setManualRedirectUrl(finalUrl);
