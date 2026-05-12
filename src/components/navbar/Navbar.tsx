@@ -1,4 +1,5 @@
 import { type Component, createSignal, Show } from "solid-js";
+import { KzLogo } from "./KzLogo";
 import { theme, setTheme, writeCookieTheme, writeStoredTheme } from "../../stores/theme";
 import { session } from "../../stores/auth";
 import { FiSun, FiMoon, FiChevronDown, FiLogOut, FiUser } from "solid-icons/fi";
@@ -48,8 +49,8 @@ const Navbar: Component = () => {
         <div class="fixed inset-0 z-30" onClick={() => setActiveDropdown(null)} />
       </Show>
 
-      <header class="fixed top-0 left-0 w-full h-16 bg-background/95 backdrop-blur-md border-b border-border z-40 transition-colors duration-300">
-        <div class="max-w-[1400px] mx-auto px-4 h-full flex items-center justify-between">
+      <header class="fixed top-3 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] max-w-7xl h-14 bg-background/95 backdrop-blur-md border border-border rounded-2xl z-40 transition-colors duration-300">
+        <div class="px-2 h-full flex items-center justify-between">
 
           <div
             onClick={handleLogoClick}
@@ -62,9 +63,9 @@ const Navbar: Component = () => {
             tabIndex={0}
             role="button"
             aria-label="Ana Sayfaya Git"
-            class="flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+            class="flex ml-2 items-center gap-2 cursor-pointer transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
           >
-            <img src="/logo.png" alt="Kariyer Zamanı" class="w-auto h-8 object-contain" />
+            <KzLogo size={24} class="text-primary" aria-hidden={true} />
           </div>
 
           <div class="flex items-center gap-2 sm:gap-4">
@@ -116,7 +117,7 @@ const Navbar: Component = () => {
                   <div class="relative z-40">
                     <button
                       onClick={() => toggleDropdown("register")}
-                      class="flex items-center gap-1 px-3 sm:px-4 py-2 tracking-[0.15px] text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary-hover transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+                      class="flex items-center gap-1 px-3 sm:px-4 py-2 tracking-[0.15px] text-sm font-medium bg-primary text-primary-foreground rounded-xl hover:bg-primary-hover transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                     >
                       Kayıt Ol
                       <span class={`inline-flex transition-transform duration-200 ${activeDropdown() === "register" ? "rotate-180" : ""}`}>

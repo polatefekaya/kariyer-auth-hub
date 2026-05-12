@@ -9,7 +9,7 @@ const App: Component<{ children?: JSX.Element }> = (props) => {
       <ThemeWatcher />
       <AuthWatcher />
       <Navbar />
-      <main class="min-h-screen pt-16 flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-background text-foreground">
+      <main class="min-h-screen pt-[68px] flex items-center justify-center p-4 sm:p-6 lg:p-8 text-foreground" style="background: linear-gradient(to bottom, hsl(var(--primary)) 0%, hsl(var(--background)) 25%)">
         {props.children}
       </main>
     </>
