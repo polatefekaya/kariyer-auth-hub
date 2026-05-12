@@ -25,6 +25,8 @@ export const KzLogo: Component<KzLogoProps> = (props) => {
         viewBox="0 0 127.267 126.507"
         width="288"
         height="288"
+        //@ts-expect-error
+        transform="matrix(2.262959006398843,0,0,2.262959006398843,112.6630554199219,104.54794129739156)"
       >
         <defs>
           <clipPath id={clipB} clipPathUnits="userSpaceOnUse">
