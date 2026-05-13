@@ -37,6 +37,8 @@ const CustomCheckbox: Component<{
   afterText: string;
   href: string;
   disabled?: boolean;
+  secondLinkText?: string;
+  secondHref?: string;
 }> = (props) => (
   <label class="flex items-start gap-2.5 cursor-pointer font-sans text-xs sm:text-sm leading-relaxed text-muted-foreground">
     <div class="relative flex items-center pt-0.5 shrink-0">
@@ -69,6 +71,18 @@ const CustomCheckbox: Component<{
       >
         {props.linkText}
       </a>
+      <Show when={props.secondLinkText && props.secondHref}>
+        {" ve "}
+        <a
+          href={props.secondHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          class="text-primary underline font-medium hover:text-primary/80 hover:no-underline transition-colors duration-200"
+        >
+          {props.secondLinkText}
+        </a>
+      </Show>
       {props.afterText}
     </span>
   </label>
@@ -93,6 +107,7 @@ const Register: Component = () => {
       kvkkAccepted: false,
       userAgreementAccepted: false,
       commercialConsentAccepted: false,
+      acikRizaAccepted: false,
     },
     status: {
       email: "idle" as ValidationStatus,
@@ -282,6 +297,14 @@ const Register: Component = () => {
           kvkk_accepted: state.payload.kvkkAccepted,
           user_agreement_accepted: state.payload.userAgreementAccepted,
           commercial_consent_accepted: state.payload.commercialConsentAccepted,
+          ...(state.payload.accountType === "employee"
+            ? {
+                acik_riza_data_abroad_accepted: state.payload.acikRizaAccepted,
+                acik_riza_health_data_accepted: state.payload.acikRizaAccepted,
+              }
+            : {
+                acik_riza_data_abroad_accepted: state.payload.kvkkAccepted,
+              }),
         },
         captchaToken: state.payload.cfToken || undefined,
       },
@@ -443,33 +466,73 @@ const Register: Component = () => {
 
           {/* Right: agreements + submit */}
           <div class="flex flex-col gap-5 pt-6 md:pt-0 border-t border-border md:border-t-0">
-            <CustomCheckbox
-              checked={state.payload.kvkkAccepted}
-              onChange={(val) => setState("payload", "kvkkAccepted", val)}
-              disabled={state.isSubmitting}
-              label="KVKK"
-              linkText="KVKK Aydınlatma Metni ve Açık Rıza Metni"
-              afterText="'ni okudum ve kabul ediyorum. *"
-              href={`${WEB_APP_URL}/gizlilik-politikasi`}
-            />
-            <CustomCheckbox
-              checked={state.payload.commercialConsentAccepted}
-              onChange={(val) => setState("payload", "commercialConsentAccepted", val)}
-              disabled={state.isSubmitting}
-              label="Ticari"
-              linkText="Ticari elektronik ileti aydınlatma metni"
-              afterText=" kapsamında tarafıma iletişim kurulmasını onaylıyorum."
-              href={`${WEB_APP_URL}/iletisim`}
-            />
-            <CustomCheckbox
-              checked={state.payload.userAgreementAccepted}
-              onChange={(val) => setState("payload", "userAgreementAccepted", val)}
-              disabled={state.isSubmitting}
-              label="Kullanıcı Sözleşmesi"
-              linkText="Kullanıcı Sözleşmesi"
-              afterText="'ni okudum ve kabul ediyorum. *"
-              href={`${WEB_APP_URL}/kullanim-sartlari`}
-            />
+            <Show
+              when={state.payload.accountType === "employee"}
+              fallback={
+                <>
+                  <CustomCheckbox
+                    checked={state.payload.kvkkAccepted}
+                    onChange={(val) => setState("payload", "kvkkAccepted", val)}
+                    disabled={state.isSubmitting}
+                    label="İşveren KVKK"
+                    linkText="İşveren-ÖİB Aydınlatma ve Açık Rıza Metni"
+                    afterText="'ni okudum ve kabul ediyorum. *"
+                    href={`${WEB_APP_URL}/isveren-kvkk-aydinlatma`}
+                  />
+                  <CustomCheckbox
+                    checked={state.payload.userAgreementAccepted}
+                    onChange={(val) => setState("payload", "userAgreementAccepted", val)}
+                    disabled={state.isSubmitting}
+                    label="İşveren Sözleşmesi"
+                    linkText="İşveren Kullanıcı Sözleşmesi"
+                    afterText="'ni okudum ve kabul ediyorum. *"
+                    href={`${WEB_APP_URL}/isveren-kullanici-sozlesmesi`}
+                  />
+                  <CustomCheckbox
+                    checked={state.payload.commercialConsentAccepted}
+                    onChange={(val) => setState("payload", "commercialConsentAccepted", val)}
+                    disabled={state.isSubmitting}
+                    label="Elektronik İleti"
+                    linkText="Elektronik İleti Onay Metni"
+                    afterText=" kapsamında tarafıma iletişim kurulmasını onaylıyorum."
+                    href={`${WEB_APP_URL}/isveren-elektronik-ileti`}
+                  />
+                </>
+              }
+            >
+              <CustomCheckbox
+                checked={state.payload.kvkkAccepted}
+                onChange={(val) => {
+                  setState("payload", "kvkkAccepted", val);
+                  setState("payload", "acikRizaAccepted", val);
+                }}
+                disabled={state.isSubmitting}
+                label="KVKK ve Açık Rıza"
+                linkText="KVKK Aydınlatma Metni"
+                secondLinkText="Açık Rıza Metni"
+                secondHref={`${WEB_APP_URL}/acik-riza-metni`}
+                afterText="'ni okudum ve kabul ediyorum. *"
+                href={`${WEB_APP_URL}/kvkk`}
+              />
+              <CustomCheckbox
+                checked={state.payload.commercialConsentAccepted}
+                onChange={(val) => setState("payload", "commercialConsentAccepted", val)}
+                disabled={state.isSubmitting}
+                label="Ticari"
+                linkText="Ticari Elektronik İleti Onayı"
+                afterText=" kapsamında tarafıma iletişim kurulmasını onaylıyorum."
+                href={`${WEB_APP_URL}/elektronik-ileti-onayi`}
+              />
+              <CustomCheckbox
+                checked={state.payload.userAgreementAccepted}
+                onChange={(val) => setState("payload", "userAgreementAccepted", val)}
+                disabled={state.isSubmitting}
+                label="Kullanıcı Sözleşmesi"
+                linkText="Kullanıcı Sözleşmesi"
+                afterText="'ni okudum ve kabul ediyorum. *"
+                href={`${WEB_APP_URL}/kullanim-sozlesmesi`}
+              />
+            </Show>
 
             <Show when={turnstileSiteKey}>
               <div class="py-1 flex justify-center">
