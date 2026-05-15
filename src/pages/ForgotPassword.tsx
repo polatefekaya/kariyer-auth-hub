@@ -21,6 +21,7 @@ const ForgotPassword: Component = () => {
   const { resolvedType, currentTypeParam } = useAccountType();
 
   const emailFromQuery = searchParams.email;
+  const emailIsLocked = !!emailFromQuery;
   if (emailFromQuery) setSearchParams({ email: undefined });
 
   const [state, setState] = createStore({
@@ -124,7 +125,7 @@ const ForgotPassword: Component = () => {
             onInput={(e) => setState("email", e.currentTarget.value)}
             validationState={validEmail()}
             error="Geçersiz E-Posta formatı"
-            disabled={state.isSubmitting}
+            disabled={state.isSubmitting || emailIsLocked}
             class="mb-0"
           />
 
