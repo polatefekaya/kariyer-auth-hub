@@ -251,6 +251,11 @@ const Migrate: Component = () => {
       } else if (errStr.includes("rate limit")) {
         errorMessage =
           "Çok fazla deneme yaptınız. Lütfen biraz bekleyip tekrar deneyin.";
+      } else if (errStr.includes("security purposes")) {
+        const match = errStr.match(/after (\d+) second/);
+        errorMessage = match?.[1]
+          ? `Güvenlik nedeniyle lütfen ${match[1]} saniye bekleyin.`
+          : "Güvenlik nedeniyle lütfen kısa bir süre bekleyin.";
       } else if (errStr.includes("password")) {
         errorMessage = "Şifreniz güvenlik kriterlerini karşılamıyor.";
       } else {

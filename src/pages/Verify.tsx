@@ -128,6 +128,11 @@ const Verify: Component = () => {
         errorMessage = "Çok fazla deneme yaptınız. Lütfen biraz bekleyin.";
       } else if (errStr.includes("expired")) {
         errorMessage = "Kodun süresi dolmuş. Lütfen yeni bir kod isteyin.";
+      } else if (errStr.includes("security purposes")) {
+        const match = errStr.match(/after (\d+) second/);
+        errorMessage = match?.[1]
+          ? `Güvenlik nedeniyle lütfen ${match[1]} saniye bekleyin.`
+          : "Güvenlik nedeniyle lütfen kısa bir süre bekleyin.";
       }
 
       setError(errorMessage);
@@ -203,6 +208,11 @@ const Verify: Component = () => {
       if (errStr.includes("rate limit")) {
         errorMessage =
           "Çok sık kod istediniz. Lütfen e-postanızı kontrol edin veya biraz bekleyin.";
+      } else if (errStr.includes("security purposes")) {
+        const match = errStr.match(/after (\d+) second/);
+        errorMessage = match?.[1]
+          ? `Güvenlik nedeniyle lütfen ${match[1]} saniye bekleyin.`
+          : "Güvenlik nedeniyle lütfen kısa bir süre bekleyin.";
       } else {
         errorMessage = resendError.message;
       }

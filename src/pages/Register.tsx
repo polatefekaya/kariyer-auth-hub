@@ -318,6 +318,11 @@ const Register: Component = () => {
         errorMessage = "Bu e-posta adresi ile zaten bir hesap oluşturulmuş. Lütfen giriş yapın.";
       } else if (errStr.includes("rate limit")) {
         errorMessage = "Çok fazla deneme yaptınız. Lütfen biraz bekleyip tekrar deneyin.";
+      } else if (errStr.includes("security purposes")) {
+        const match = errStr.match(/after (\d+) second/);
+        errorMessage = match?.[1]
+          ? `Güvenlik nedeniyle lütfen ${match[1]} saniye bekleyin.`
+          : "Güvenlik nedeniyle lütfen kısa bir süre bekleyin.";
       } else {
         errorMessage = authError.message;
       }

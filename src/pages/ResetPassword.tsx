@@ -11,6 +11,7 @@ import { AuthFooter } from '../components/layout/AuthFooter';
 import { AuthHeaderTexts } from "../constants/authTexts";
 import { AccMapByType } from "../types/account";
 import { computePasswordRules } from '../utils/passwordValidation';
+import { getDefaultRedirect } from '../utils/redirectHelper';
 import { useAccountType } from '../hooks/useAccountType';
 
 type ValidationState = 'idle' | 'valid' | 'invalid';
@@ -127,10 +128,13 @@ const ResetPassword: Component = () => {
       setState('success', true);
       setState('isSubmitting', false);
 
-      await supabase.auth.signOut();
-
       setTimeout(() => {
-        navigate(`/login${currentTypeParam()}`, { replace: true });
+        const redirectUrl = getDefaultRedirect(resolvedType() ? AccMapByType[resolvedType()!] : null);
+        if (redirectUrl) {
+          window.location.href = redirectUrl;
+        } else {
+          navigate(`/login${currentTypeParam()}`, { replace: true });
+        }
       }, 3000);
     }
   };
@@ -146,7 +150,7 @@ const ResetPassword: Component = () => {
 
       <Show when={state.success}>
         <div class="p-4 bg-success-subtle text-success-subtle-foreground text-sm font-bold rounded-xl border border-success/20 text-center mb-6 animate-in fade-in zoom-in duration-300">
-          Şifreniz başarıyla güncellendi! Giriş ekranına yönlendiriliyorsunuz...
+          Şifreniz başarıyla güncellendi! Uygulamaya yönlendiriliyorsunuz...
         </div>
       </Show>
 
