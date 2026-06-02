@@ -1,5 +1,3 @@
-import 'zone.js';
-
 import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
 import { BatchSpanProcessor, AlwaysOnSampler, TraceIdRatioBasedSampler, ParentBasedSampler } from '@opentelemetry/sdk-trace-base';
 import type { SpanProcessor } from '@opentelemetry/sdk-trace-base';
@@ -8,7 +6,7 @@ import type { ReadableSpan } from '@opentelemetry/sdk-trace-base';
 import type { Context } from '@opentelemetry/api';
 import { trace } from '@opentelemetry/api';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { ZoneContextManager } from '@opentelemetry/context-zone';
+import { StackContextManager } from '@opentelemetry/sdk-trace-web';
 import { CompositePropagator, W3CTraceContextPropagator, W3CBaggagePropagator } from '@opentelemetry/core';
 import { registerInstrumentations } from '@opentelemetry/instrumentation';
 import { FetchInstrumentation } from '@opentelemetry/instrumentation-fetch';
@@ -57,10 +55,6 @@ export function emitLog(
   } catch {}
 }
 
-/**
- * Build a W3C traceparent header value from the current active span.
- * Used to propagate trace context across redirects to the main app.
- */
 export function getCurrentTraceparent(): string | null {
   try {
     const span = trace.getActiveSpan();
@@ -72,9 +66,6 @@ export function getCurrentTraceparent(): string | null {
   }
 }
 
-/**
- * Inject traceparent into a redirect URL so the main app can link the trace.
- */
 export function injectTraceparent(url: string): string {
   try {
     const traceparent = sessionStorage.getItem('otel_auth_traceparent');
@@ -140,6 +131,9 @@ try {
   }
 
   // ─── Trace Provider ─────────────────────────────────────────────────────────
+  // Uses StackContextManager instead of ZoneContextManager — zone.js is not
+  // needed for Solid.js and its static import crashes Vite's build (zone.js
+  // patches browser globals like CustomEvent/EventTarget in Node.js context).
   const traceExporter = new OTLPTraceExporter({ url: `${OTLP_BASE}/v1/traces` });
   const provider = new WebTracerProvider({
     resource,
@@ -151,7 +145,7 @@ try {
   });
 
   provider.register({
-    contextManager: new ZoneContextManager(),
+    contextManager: new StackContextManager(),
     propagator: new CompositePropagator({
       propagators: [new W3CTraceContextPropagator(), new W3CBaggagePropagator()],
     }),
@@ -187,7 +181,7 @@ try {
         severityText: 'ERROR',
         body: String(msg),
         attributes: {
-          'error.source': src ?? '',
+          'error.source': String(src ?? ''),
           'error.line': String(line ?? ''),
           'error.stack': err?.stack ?? '',
           'error.type': 'uncaught_exception',

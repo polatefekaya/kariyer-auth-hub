@@ -11,7 +11,6 @@
   "dependencies": {
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/api-logs": "^0.218.0",
-    "@opentelemetry/context-zone": "^2.7.1",
     "@opentelemetry/core": "^2.7.1",
     "@opentelemetry/exporter-logs-otlp-http": "^0.218.0",
     "@opentelemetry/exporter-metrics-otlp-http": "^0.218.0",
@@ -37,8 +36,7 @@
     "solid-icons": "^1.2.0",
     "solid-js": "^1.9.11",
     "tailwind-merge": "^3.5.0",
-    "tailwindcss": "^4.2.2",
-    "zone.js": "^0.16.2"
+    "tailwindcss": "^4.2.2"
   },
   "devDependencies": {
     "@types/node": "^24.12.0",
