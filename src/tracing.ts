@@ -95,7 +95,12 @@ function _safeStr(a: unknown): string {
 const _stringify = (args: unknown[]): string => args.map(_safeStr).join(' ');
 
 try {
-  const resource = resourceFromAttributes({ 'service.name': 'auth-hub' });
+  const resource = resourceFromAttributes({
+    'service.name': 'auth-hub',
+    'service.version': import.meta.env.VITE_VERSION || '0.1.0',
+    'service.instance.id': _sessionId!,
+    'deployment.environment': import.meta.env.VITE_ENVIRONMENT || (import.meta.env.DEV ? 'development' : 'production'),
+  });
 
   // ─── Logs Provider ──────────────────────────────────────────────────────────
   const logsExporter = new OTLPLogExporter({ url: `${OTLP_BASE}/v1/logs` });
