@@ -225,7 +225,7 @@ const Migrate: Component = () => {
     e.preventDefault();
     if (isSubmitDisabled()) return;
 
-    trackAuthStep('migration', 'submit', { email: state.payload.email ?? '', account_type: state.payload.accountType });
+    trackAuthStep('migration', 'submit', { email: state.payload.email ?? '', account_type: state.payload.accountType ?? '' });
 
     setState("ui", "isSubmitting", true);
     setState("errors", "global", null);
