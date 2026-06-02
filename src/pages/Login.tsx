@@ -16,6 +16,8 @@ import { theme } from "../stores/theme";
 import { resetTurnstile } from "../utils/turnstile";
 import { saveAuthRedirect, getAuthRedirect, clearAuthRedirect } from "../utils/sessionRedirect";
 import { useAccountType } from "../hooks/useAccountType";
+import { trackAuthStep, completeAuthFunnel, trackAuthError } from '../utils/authFunnel';
+import { injectTraceparent } from '../tracing';
 
 type ValidationState = "idle" | "valid" | "invalid";
 
@@ -41,6 +43,8 @@ const Login: Component = () => {
   const apiUrl = import.meta.env.VITE_API_URL;
 
   onMount(() => {
+    trackAuthStep('login', 'page_view', { account_type: accountTypeFromUrl() || 'employee' });
+
     const rawRedirect = searchParams.redirect_to;
     const appRedirect = Array.isArray(rawRedirect) ? rawRedirect[0] : rawRedirect;
     if (appRedirect) {
@@ -86,6 +90,8 @@ const Login: Component = () => {
     e.preventDefault();
     if (isSubmitDisabled()) return;
 
+    trackAuthStep('login', 'submit', { email: state.payload.email, account_type: state.payload.accountType });
+
     setState("isSubmitting", true);
     setState("errors", "global", null);
     setState("mismatchRole", null);
@@ -127,6 +133,7 @@ const Login: Component = () => {
 
           if (!hasMigratedAccount) {
             console.log("[Auth] Unmigrated legacy user detected. Intercepting.");
+            trackAuthStep('login', 'legacy_redirect', { email: cleanEmail });
 
             if (accounts.length > 1) {
               navigate(`/migrate?email=${encodeURIComponent(cleanEmail)}&conflict=true`);
@@ -156,19 +163,22 @@ const Login: Component = () => {
         return;
       }
 
-      setState("errors", "global", "E-posta veya şifre hatalı.");
+      const errorMessage = "E-posta veya şifre hatalı.";
+      trackAuthError('login', 'submit', errorMessage, { email: cleanEmail });
+      setState("errors", "global", errorMessage);
       setState("payload", "cfToken", null);
       resetTurnstile();
     } else {
+      completeAuthFunnel('login', { email: cleanEmail, account_type: state.payload.accountType });
       const intendedTarget = getAuthRedirect();
 
       if (intendedTarget) {
         clearAuthRedirect();
         const url = new URL(intendedTarget);
         url.hash = `access_token=${data.session.access_token}&refresh_token=${data.session.refresh_token}&expires_in=${data.session.expires_in}`;
-        window.location.replace(url.toString());
+        window.location.replace(injectTraceparent(url.toString()));
       } else {
-        window.location.href = getDefaultRedirect(AccMapByType[state.payload.accountType]);
+        window.location.href = injectTraceparent(getDefaultRedirect(AccMapByType[state.payload.accountType]));
       }
     }
 

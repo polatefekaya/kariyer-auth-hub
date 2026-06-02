@@ -23,6 +23,7 @@ import type { ValidationStatus } from "../types/validation";
 import { theme } from "../stores/theme";
 import { computePasswordRules } from "../utils/passwordValidation";
 import { resetTurnstile } from "../utils/turnstile";
+import { trackAuthStep, trackAuthError } from '../utils/authFunnel';
 
 const AccountSelectButton: Component<{
   title: string;
@@ -104,6 +105,8 @@ const Migrate: Component = () => {
         console.warn("[Migrate] Malformed email parameter.");
       }
     }
+
+    trackAuthStep('migration', 'page_view', { email: currentEmail });
 
     const rawConflictParam = searchParams.conflict;
     const conflictParam = Array.isArray(rawConflictParam)
@@ -201,6 +204,7 @@ const Migrate: Component = () => {
   });
 
   const handleAccountSelect = (type: string) => {
+    trackAuthStep('migration', 'select_account', { account_type: type });
     setState("payload", "accountType", type as AccountType);
     setState("ui", "step", 2);
     setState("errors", "global", null);
@@ -220,6 +224,8 @@ const Migrate: Component = () => {
   const handleMigrate = async (e: Event) => {
     e.preventDefault();
     if (isSubmitDisabled()) return;
+
+    trackAuthStep('migration', 'submit', { email: state.payload.email, account_type: state.payload.accountType });
 
     setState("ui", "isSubmitting", true);
     setState("errors", "global", null);
@@ -262,10 +268,12 @@ const Migrate: Component = () => {
         errorMessage = authError.message;
       }
 
+      trackAuthError('migration', 'submit', errorMessage);
       setState("errors", "global", errorMessage);
       setState("payload", "cfToken", null);
       resetTurnstile();
     } else {
+      trackAuthStep('migration', 'submitted_verify', { email: cleanEmail });
       console.log("Migration initiated for:", data.user?.id);
       navigate(`/verify?email=${encodeURIComponent(cleanEmail)}`, {
         replace: true,

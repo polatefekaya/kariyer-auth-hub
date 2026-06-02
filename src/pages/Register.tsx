@@ -28,6 +28,7 @@ import { computePasswordRules } from "../utils/passwordValidation";
 import { resetTurnstile } from "../utils/turnstile";
 import { saveAuthRedirect } from "../utils/sessionRedirect";
 import { useAccountType } from "../hooks/useAccountType";
+import { trackAuthStep, trackAuthError } from '../utils/authFunnel';
 
 const CustomCheckbox: Component<{
   checked: boolean;
@@ -126,6 +127,8 @@ const Register: Component = () => {
   const WEB_APP_URL = import.meta.env.VITE_WEB_APP_URL || window.location.origin;
 
   onMount(() => {
+    trackAuthStep('registration', 'page_view', { account_type: resolvedType() || 'employee' });
+
     const rawRedirect = searchParams.redirect_to;
     const appRedirect = Array.isArray(rawRedirect) ? rawRedirect[0] : rawRedirect;
     if (appRedirect) {
@@ -277,6 +280,8 @@ const Register: Component = () => {
     e.preventDefault();
     if (isSubmitDisabled()) return;
 
+    trackAuthStep('registration', 'submit', { email: state.payload.email, account_type: state.payload.accountType });
+
     setState("isSubmitting", true);
     setState("errors", "global", null);
 
@@ -327,14 +332,18 @@ const Register: Component = () => {
         errorMessage = authError.message;
       }
 
+      trackAuthError('registration', 'submit', errorMessage, { email: state.payload.email });
       setState("errors", "global", errorMessage);
       setState("payload", "cfToken", null);
       resetTurnstile();
     } else if (data.user?.identities?.length === 0) {
-      setState("errors", "global", "Bu hesap zaten kullanımda. Lütfen giriş yapmayı deneyin.");
+      const duplicateError = "Bu hesap zaten kullanımda. Lütfen giriş yapmayı deneyin.";
+      trackAuthError('registration', 'submit', duplicateError, { email: state.payload.email });
+      setState("errors", "global", duplicateError);
       setState("payload", "cfToken", null);
       resetTurnstile();
     } else {
+      trackAuthStep('registration', 'email_sent', { email: state.payload.email });
       const onboardingUrl = `${WEB_APP_URL}/onboarding/${state.payload.accountType}`;
       saveAuthRedirect(onboardingUrl);
       navigate(`/verify?email=${encodeURIComponent(cleanEmail)}`, {
