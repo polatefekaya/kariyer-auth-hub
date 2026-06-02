@@ -151,12 +151,38 @@ try {
     }),
   });
 
+  const CORS_URLS = [/kariyerzamani\.com/, /your-gateway\.com/];
+
   registerInstrumentations({
     instrumentations: [
       new FetchInstrumentation({
-        propagateTraceHeaderCorsUrls: [/your-gateway\.com/, /kariyerzamani\.com/],
+        propagateTraceHeaderCorsUrls: CORS_URLS,
+        applyCustomAttributesOnSpan: (span: any, request: any) => {
+          try {
+            const url = request?.url ?? (request instanceof Request ? request.url : '');
+            if (url) {
+              const parsed = new URL(url);
+              span.updateName(`${request?.method ?? 'GET'} ${parsed.pathname}`);
+              span.setAttribute('http.url.path', parsed.pathname);
+              span.setAttribute('http.url.full', `${parsed.origin}${parsed.pathname}`);
+            }
+          } catch {}
+        },
       }),
-      new XMLHttpRequestInstrumentation(),
+      new XMLHttpRequestInstrumentation({
+        propagateTraceHeaderCorsUrls: CORS_URLS,
+        applyCustomAttributesOnSpan: (span: any, xhr: XMLHttpRequest) => {
+          try {
+            const url = xhr.responseURL || '';
+            if (url) {
+              const parsed = new URL(url);
+              span.updateName(`${parsed.pathname}`);
+              span.setAttribute('http.url.path', parsed.pathname);
+              span.setAttribute('http.url.full', `${parsed.origin}${parsed.pathname}`);
+            }
+          } catch {}
+        },
+      }),
       new DocumentLoadInstrumentation(),
       new UserInteractionInstrumentation(),
       new LongTaskInstrumentation(),
