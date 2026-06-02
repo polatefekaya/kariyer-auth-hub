@@ -1,4 +1,4 @@
-import { type Component, createMemo, Show } from "solid-js";
+import { type Component, createMemo, onMount, Show } from "solid-js";
 import { createStore } from "solid-js/store";
 import { useSearchParams } from "@solidjs/router";
 import { supabase } from "../lib/supabase";
@@ -13,6 +13,7 @@ import { AccMapByType } from "../types/account";
 import { theme } from "../stores/theme";
 import { resetTurnstile } from "../utils/turnstile";
 import { useAccountType } from "../hooks/useAccountType";
+import { trackAuthStep, trackAuthError } from '../utils/authFunnel';
 
 type ValidationState = "idle" | "valid" | "invalid";
 
@@ -34,6 +35,10 @@ const ForgotPassword: Component = () => {
 
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
+  onMount(() => {
+    trackAuthStep('password_reset', 'page_view');
+  });
+
   const validEmail = createMemo<ValidationState>(() => {
     if (!state.email) return "idle";
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -50,6 +55,8 @@ const ForgotPassword: Component = () => {
   const handleReset = async (e: Event) => {
     e.preventDefault();
     if (isSubmitDisabled()) return;
+
+    trackAuthStep('password_reset', 'request_submit', { email: state.email });
 
     setState("isSubmitting", true);
     setState("error", null);
@@ -79,10 +86,12 @@ const ForgotPassword: Component = () => {
         errorMessage = resetError.message;
       }
 
+      trackAuthError('password_reset', 'request_submit', errorMessage);
       setState("error", errorMessage);
       setState("cfToken", null);
       resetTurnstile();
     } else {
+      trackAuthStep('password_reset', 'email_sent', { email: cleanEmail });
       setState("success", true);
     }
 

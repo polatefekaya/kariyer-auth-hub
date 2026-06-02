@@ -1,3 +1,4 @@
+import './tracing';
 import { render } from 'solid-js/web';
 import { Router, Route, Navigate } from '@solidjs/router';
 import './index.css';

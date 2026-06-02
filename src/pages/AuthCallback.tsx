@@ -8,6 +8,8 @@ import { ALLOWED_ORIGINS } from "../types/config";
 import { AuthHeaderTexts } from "../constants/authTexts";
 import { IoReloadOutline } from "solid-icons/io";
 import { getAuthRedirect, clearAuthRedirect } from "../utils/sessionRedirect";
+import { trackAuthStep, completeAuthFunnel, trackAuthError } from '../utils/authFunnel';
+import { injectTraceparent } from '../tracing';
 
 const AuthCallback: Component = () => {
   const navigate = useNavigate();
@@ -60,12 +62,15 @@ const AuthCallback: Component = () => {
 
     if (!accountType) {
       console.error("FATAL: Backend did not inject account_type in time.");
-      setError("Hesap türü alınamadı. Lütfen tekrar giriş yapın.");
+      const timeoutError = "Hesap türü alınamadı. Lütfen tekrar giriş yapın.";
+      trackAuthError('oauth', 'callback', timeoutError);
+      setError(timeoutError);
       setIsHandingOff(false);
       await supabase.auth.signOut();
       return;
     }
 
+    completeAuthFunnel('oauth', { account_type: accountType });
     setStatusText("Uygulamaya geçiş yapılıyor...");
 
     const finalQueryParams = new URLSearchParams(window.location.search);
@@ -76,7 +81,7 @@ const AuthCallback: Component = () => {
     try {
       const url = new URL(safeTargetUrl);
       url.hash = `access_token=${activeSession.access_token}&refresh_token=${activeSession.refresh_token}`;
-      const finalUrl = url.toString();
+      const finalUrl = injectTraceparent(url.toString());
 
       clearAuthRedirect();
       sessionStorage.removeItem("kariyer_oauth_type");
@@ -86,19 +91,24 @@ const AuthCallback: Component = () => {
       setTimeout(() => {
               window.location.href = finalUrl;
             }, 100);
-      
+
     } catch (err) {
+      trackAuthError('oauth', 'callback', "Yönlendirme bağlantısı oluşturulamadı.");
       setError("Yönlendirme bağlantısı oluşturulamadı.");
     }
   };
 
   onMount(() => {
+    trackAuthStep('oauth', 'callback_received');
+
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const queryParams = new URLSearchParams(window.location.search);
     const urlError = hashParams.get("error_description") || queryParams.get("error_description");
 
     if (urlError) {
-      setError(decodeURIComponent(urlError.replace(/\+/g, " ")));
+      const decodedError = decodeURIComponent(urlError.replace(/\+/g, " "));
+      trackAuthError('oauth', 'callback', decodedError);
+      setError(decodedError);
       return;
     }
 

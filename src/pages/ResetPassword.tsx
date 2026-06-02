@@ -13,6 +13,8 @@ import { AccMapByType } from "../types/account";
 import { computePasswordRules } from '../utils/passwordValidation';
 import { getDefaultRedirect } from '../utils/redirectHelper';
 import { useAccountType } from '../hooks/useAccountType';
+import { trackAuthStep, completeAuthFunnel, trackAuthError } from '../utils/authFunnel';
+import { injectTraceparent } from '../tracing';
 
 type ValidationState = 'idle' | 'valid' | 'invalid';
 
@@ -34,6 +36,8 @@ const ResetPassword: Component = () => {
   const dynamicForgotRoute = () => `/forgot-password${currentTypeParam()}`;
 
   onMount(() => {
+    trackAuthStep('password_reset', 'reset_page_view');
+
     const hash = window.location.hash;
     const isImplicitFlow = hash.includes('type=recovery') || hash.includes('access_token=');
 
@@ -103,6 +107,8 @@ const ResetPassword: Component = () => {
     e.preventDefault();
     if (isSubmitDisabled()) return;
 
+    trackAuthStep('password_reset', 'set_password');
+
     setState('isSubmitting', true);
     setState('error', null);
 
@@ -122,16 +128,18 @@ const ResetPassword: Component = () => {
         errorMessage = updateError.message;
       }
 
+      trackAuthError('password_reset', 'set_password', errorMessage);
       setState('error', errorMessage);
       setState('isSubmitting', false);
     } else {
+      completeAuthFunnel('password_reset');
       setState('success', true);
       setState('isSubmitting', false);
 
       setTimeout(() => {
         const redirectUrl = getDefaultRedirect(resolvedType() ? AccMapByType[resolvedType()!] : null);
         if (redirectUrl) {
-          window.location.href = redirectUrl;
+          window.location.href = injectTraceparent(redirectUrl);
         } else {
           navigate(`/login${currentTypeParam()}`, { replace: true });
         }

@@ -22,6 +22,8 @@ import { resetTurnstile } from "../utils/turnstile";
 import { getAuthRedirect, clearAuthRedirect } from "../utils/sessionRedirect";
 import { useAccountType } from "../hooks/useAccountType";
 import { useSearchParams } from "@solidjs/router";
+import { trackAuthStep, completeAuthFunnel, trackAuthError } from '../utils/authFunnel';
+import { injectTraceparent } from '../tracing';
 
 const Verify: Component = () => {
   const [searchParams] = useSearchParams();
@@ -58,6 +60,8 @@ const Verify: Component = () => {
   const dynamicLoginRoute = () => `/login${currentTypeParam()}`;
 
   onMount(() => {
+    trackAuthStep('registration', 'verify_page_view', { email: initialEmail });
+
     if (!initialEmail) {
       navigate("/login", { replace: true });
       return;
@@ -110,6 +114,8 @@ const Verify: Component = () => {
     e.preventDefault();
     if (!isComplete()) return;
 
+    trackAuthStep('registration', 'verify_submit', { email: initialEmail });
+
     setIsSubmitting(true);
     setError(null);
     setSuccessMsg(null);
@@ -135,6 +141,7 @@ const Verify: Component = () => {
           : "Güvenlik nedeniyle lütfen kısa bir süre bekleyin.";
       }
 
+      trackAuthError('registration', 'verify_error', errorMessage, { email: initialEmail });
       setError(errorMessage);
       setCode("");
       if (inputRef) inputRef.value = "";
@@ -142,6 +149,7 @@ const Verify: Component = () => {
       resetTurnstile();
       inputRef?.focus();
     } else if (data.session) {
+      completeAuthFunnel('registration', { email: initialEmail });
       const intendedTarget = getAuthRedirect();
       const targetRedirect = getDefaultRedirect(
         resolvedType() ? AccMapByType[resolvedType()!] : undefined
@@ -152,12 +160,12 @@ const Verify: Component = () => {
         try {
           const url = new URL(intendedTarget);
           url.hash = `access_token=${data.session.access_token}&refresh_token=${data.session.refresh_token}&expires_in=${data.session.expires_in}`;
-          window.location.replace(url.toString());
+          window.location.replace(injectTraceparent(url.toString()));
         } catch (urlErr) {
-          window.location.href = targetRedirect;
+          window.location.href = injectTraceparent(targetRedirect);
         }
       } else {
-        window.location.href = targetRedirect;
+        window.location.href = injectTraceparent(targetRedirect);
       }
     }
 
@@ -166,6 +174,8 @@ const Verify: Component = () => {
 
   const handleResend = async () => {
     if (resendTimer() > 0) return;
+
+    trackAuthStep('registration', 'resend_code', { email: initialEmail });
 
     if (turnstileSiteKey && !cfToken()) {
       setError("Lütfen önce güvenlik doğrulamasını tamamlayın.");
@@ -217,6 +227,7 @@ const Verify: Component = () => {
         errorMessage = resendError.message;
       }
 
+      trackAuthError('registration', 'verify_error', errorMessage, { email: initialEmail });
       setError(errorMessage);
       setResendTimer(0);
       if (resendInterval !== null) {
