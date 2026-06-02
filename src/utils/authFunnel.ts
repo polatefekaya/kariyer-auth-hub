@@ -1,4 +1,4 @@
-import { trace, context, SpanStatusCode } from '@opentelemetry/api';
+import { trace, SpanStatusCode } from '@opentelemetry/api';
 import { metrics } from '@opentelemetry/api';
 
 const tracer = trace.getTracer('auth-hub');
