@@ -1,4 +1,5 @@
 import './tracing';
+import './posthog';
 import { render } from 'solid-js/web';
 import { Router, Route, Navigate } from '@solidjs/router';
 import './index.css';
