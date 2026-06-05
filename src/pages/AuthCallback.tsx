@@ -71,6 +71,7 @@ const AuthCallback: Component = () => {
     }
 
     completeAuthFunnel('oauth', { account_type: accountType });
+    try { const { getPostHog } = await import('../posthog'); getPostHog()?.identify(activeSession.user.id); } catch {}
     setStatusText("Uygulamaya geçiş yapılıyor...");
 
     const finalQueryParams = new URLSearchParams(window.location.search);

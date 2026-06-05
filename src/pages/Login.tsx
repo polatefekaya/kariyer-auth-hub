@@ -170,6 +170,7 @@ const Login: Component = () => {
       resetTurnstile();
     } else {
       completeAuthFunnel('login', { email: cleanEmail, account_type: state.payload.accountType });
+      try { const { getPostHog } = await import('../posthog'); getPostHog()?.identify(data.session.user.id); } catch {}
       const intendedTarget = getAuthRedirect();
 
       if (intendedTarget) {

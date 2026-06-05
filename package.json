@@ -33,6 +33,7 @@
     "@zxcvbn-ts/core": "^3.0.4",
     "clsx": "^2.1.1",
     "ogl": "^1.0.11",
+    "posthog-js": "^1.379.0",
     "solid-icons": "^1.2.0",
     "solid-js": "^1.9.11",
     "tailwind-merge": "^3.5.0",

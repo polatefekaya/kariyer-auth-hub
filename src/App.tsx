@@ -1,9 +1,19 @@
-import { type Component, type JSX } from 'solid-js';
+import { type Component, type JSX, createEffect } from 'solid-js';
+import { useLocation } from '@solidjs/router';
 import ThemeWatcher from './ThemeWatcher';
 import AuthWatcher from './AuthWatcher';
 import Navbar from './components/navbar/Navbar';
+import { captureAuthEvent } from './utils/posthog-events';
 
 const App: Component<{ children?: JSX.Element }> = (props) => {
+  const location = useLocation();
+  createEffect(() => {
+    captureAuthEvent('$pageview', {
+      path: location.pathname,
+      search: location.search,
+    });
+  });
+
   return (
     <>
       <ThemeWatcher />

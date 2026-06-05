@@ -1,5 +1,6 @@
 import { trace, SpanStatusCode } from '@opentelemetry/api';
 import { metrics } from '@opentelemetry/api';
+import { captureAuthEvent } from './posthog-events';
 
 const tracer = trace.getTracer('auth-hub');
 const meter = metrics.getMeter('auth-hub');
@@ -89,6 +90,7 @@ export function trackAuthStep(
     sessionStorage.setItem('otel_auth_traceparent', `00-${ctx.traceId}-${ctx.spanId}-01`);
   } catch {}
   span.end();
+  captureAuthEvent(`auth/${step}`, { funnel, ...attrs });
 
   saveState({
     funnel,
@@ -117,6 +119,7 @@ export function completeAuthFunnel(funnel: string, attrs?: Record<string, string
     },
   });
   span.end();
+  captureAuthEvent(`auth/${funnel}_complete`, attrs);
 
   // Persist traceparent for the redirect
   try {
@@ -169,4 +172,5 @@ export function trackAuthError(
   });
   span.setStatus({ code: SpanStatusCode.ERROR, message: error });
   span.end();
+  captureAuthEvent(`auth/${funnel}_error`, { step, error, ...attrs });
 }
