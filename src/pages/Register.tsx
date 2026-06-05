@@ -490,66 +490,62 @@ const Register: Component = () => {
                     onChange={(val) => setState("payload", "kvkkAccepted", val)}
                     disabled={state.isSubmitting}
                     label="İşveren KVKK"
-                    linkText="KİŞİSEL VERİLERİN İŞLENMESİ VE KORUNMASI HAKKINDA AYDINLATMA VE AÇIK RIZA METNİ (İşveren)"
+                    linkText="İşveren Aydınlatma ve Açık Rıza Metni"
                     afterText="'ni okudum ve kabul ediyorum. *"
                     href={`${WEB_APP_URL}/kvkk-isveren`}
+                  />
+                  <CustomCheckbox
+                    checked={state.payload.ticariIletiAccepted}
+                    onChange={(val) => setState("payload", "ticariIletiAccepted", val)}
+                    disabled={state.isSubmitting}
+                    label="Elektronik İleti"
+                    linkText="Elektronik İleti Onay Metni"
+                    afterText=" kapsamında tarafıma iletişim kurulmasını onaylıyorum."
+                    href={`${WEB_APP_URL}/acik-riza-isveren`}
                   />
                   <CustomCheckbox
                     checked={state.payload.sozlesmeAccepted}
                     onChange={(val) => setState("payload", "sozlesmeAccepted", val)}
                     disabled={state.isSubmitting}
                     label="İşveren Sözleşmesi"
-                    linkText="KARİYER ZAMANI İŞVEREN SÖZLEŞMESİ"
+                    linkText="İşveren Kullanıcı Sözleşmesi"
                     afterText="'ni okudum ve kabul ediyorum. *"
                     href={`${WEB_APP_URL}/isveren-sozlesmesi`}
-                  />
-                  <CustomCheckbox
-                    checked={state.payload.ticariIletiAccepted}
-                    onChange={(val) => setState("payload", "ticariIletiAccepted", val)}
-                    disabled={state.isSubmitting}
-                    label="Ticari İleti"
-                    linkText="Kişisel Verilerin Ticari Elektronik İleti Gönderimi İçin İşlenmesine Yönelik Açık Rıza Metni (İşveren)"
-                    afterText=" kapsamında tarafıma iletişim kurulmasını onaylıyorum."
-                    href={`${WEB_APP_URL}/acik-riza-isveren`}
                   />
                 </>
               }
             >
               <CustomCheckbox
                 checked={state.payload.kvkkAccepted}
-                onChange={(val) => setState("payload", "kvkkAccepted", val)}
+                onChange={(val) => {
+                  setState("payload", "kvkkAccepted", val);
+                  setState("payload", "acikRizaAccepted", val);
+                }}
                 disabled={state.isSubmitting}
-                label="KVKK Aydınlatma"
-                linkText="KİŞİSEL VERİLERİN İŞLENMESİ VE KORUNMASI HAKKINDA AYDINLATMA METNİ"
+                label="KVKK ve Açık Rıza"
+                linkText="KVKK Aydınlatma Metni"
+                secondLinkText="Açık Rıza Metni"
+                secondHref={`${WEB_APP_URL}/acik-riza`}
                 afterText="'ni okudum ve kabul ediyorum. *"
                 href={`${WEB_APP_URL}/kvkk-aydinlatma`}
-              />
-              <CustomCheckbox
-                checked={state.payload.acikRizaAccepted}
-                onChange={(val) => setState("payload", "acikRizaAccepted", val)}
-                disabled={state.isSubmitting}
-                label="Açık Rıza"
-                linkText="KİŞİSEL VERİLERİN İŞLENMESİ VE YURTDIŞINA AKTARILMASI HAKKINDA AÇIK RIZA METNİ"
-                afterText="'ni okudum ve kabul ediyorum. *"
-                href={`${WEB_APP_URL}/acik-riza`}
-              />
-              <CustomCheckbox
-                checked={state.payload.sozlesmeAccepted}
-                onChange={(val) => setState("payload", "sozlesmeAccepted", val)}
-                disabled={state.isSubmitting}
-                label="Kullanıcı Sözleşmesi"
-                linkText="KARİYER ZAMANI KULLANICI SÖZLEŞMESİ"
-                afterText="'ni okudum ve kabul ediyorum. *"
-                href={`${WEB_APP_URL}/kullanici-sozlesmesi`}
               />
               <CustomCheckbox
                 checked={state.payload.ticariIletiAccepted}
                 onChange={(val) => setState("payload", "ticariIletiAccepted", val)}
                 disabled={state.isSubmitting}
                 label="Ticari İleti"
-                linkText="Kişisel Verilerin Ticari Elektronik İleti Gönderimi İçin İşlenmesine Yönelik Açık Rıza Metni"
+                linkText="Ticari Elektronik İleti Onayı"
                 afterText=" kapsamında tarafıma iletişim kurulmasını onaylıyorum."
                 href={`${WEB_APP_URL}/elektronik-ileti-onayi`}
+              />
+              <CustomCheckbox
+                checked={state.payload.sozlesmeAccepted}
+                onChange={(val) => setState("payload", "sozlesmeAccepted", val)}
+                disabled={state.isSubmitting}
+                label="Kullanıcı Sözleşmesi"
+                linkText="Kullanıcı Sözleşmesi"
+                afterText="'ni okudum ve kabul ediyorum. *"
+                href={`${WEB_APP_URL}/kullanici-sozlesmesi`}
               />
             </Show>
 
