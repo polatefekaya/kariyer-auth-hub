@@ -15,7 +15,7 @@ if (POSTHOG_KEY && POSTHOG_HOST) {
       capture_pageview: false,
       capture_pageleave: true,
       persistence: 'localStorage+cookie',
-      person_profiles: 'identified_and_anonymous',
+      person_profiles: 'identified_only',
       debug: IS_DEV,
       disable_session_recording: true, // auth hub handles passwords — no replay
       loaded: (ph) => {
