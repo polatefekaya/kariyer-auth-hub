@@ -1,4 +1,5 @@
 import { type Component, Show, splitProps, type JSX, createMemo } from 'solid-js';
+import { t } from '../../i18n';
 import { cn } from '../../utils/cn';
 import type { AccountTypeId } from '../../types/account';
 import { getDefaultRedirect } from '../../utils/redirectHelper';
@@ -41,11 +42,11 @@ export const AuthHeader: Component<AuthHeaderProps> = (props) => {
       <a
         href={targetUrl()}
         class="shrink-0 transition-all duration-200 hover:scale-105 hover:opacity-90 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-xl"
-        aria-label="Kariyer Zamanı Ana Sayfasına Dön"
+        aria-label={t('header.homeAriaLabel')}
       >
         <img
           src="/logo.png"
-          alt="Kariyer Zamanı Logo"
+          alt={t('header.logoAlt')}
           class="h-14 w-auto object-contain cursor-pointer"
         />
       </a>

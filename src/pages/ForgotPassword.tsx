@@ -12,6 +12,7 @@ import { AuthHeaderTexts } from "../constants/authTexts";
 import { AccMapByType } from "../types/account";
 import { theme } from "../stores/theme";
 import { resetTurnstile } from "../utils/turnstile";
+import { t } from "../i18n";
 import { useAccountType } from "../hooks/useAccountType";
 import { trackAuthStep, trackAuthError } from '../utils/authFunnel';
 
@@ -72,16 +73,16 @@ const ForgotPassword: Component = () => {
     );
 
     if (resetError) {
-      let errorMessage = "Şifre sıfırlama bağlantısı gönderilemedi. Lütfen tekrar deneyin.";
+      let errorMessage = t('forgotPassword.errGeneric');
       const errStr = resetError.message.toLowerCase();
 
       if (errStr.includes("rate limit")) {
-        errorMessage = "Çok fazla deneme yaptınız. Lütfen biraz bekleyip tekrar deneyin.";
+        errorMessage = t('forgotPassword.errRateLimit');
       } else if (errStr.includes("security purposes")) {
         const match = errStr.match(/after (\d+) second/);
         errorMessage = match?.[1]
-          ? `Güvenlik nedeniyle lütfen ${match[1]} saniye bekleyin.`
-          : "Güvenlik nedeniyle lütfen kısa bir süre bekleyin.";
+          ? t('forgotPassword.errSecurityWait', { count: match[1] })
+          : t('forgotPassword.errSecurityWaitShort');
       } else {
         errorMessage = resetError.message;
       }
@@ -118,11 +119,11 @@ const ForgotPassword: Component = () => {
             </svg>
           </div>
           <p class="text-sm text-muted-foreground text-center mb-12">
-            Güvenli bağlantıyı buraya gönderdik: <br />
+            {t('forgotPassword.sentTo')} <br />
             <span class="font-bold text-foreground">{state.email.trim().toLowerCase()}</span>
           </p>
           <a href={dynamicLoginRoute()} class="px-6 py-2 bg-secondary text-sm font-bold text-secondary-foreground hover:bg-secondary-hover rounded-lg transition-colors">
-            Giriş'e Dön
+            {t('forgotPassword.backToLogin')}
           </a>
         </div>
       </Show>
@@ -132,13 +133,13 @@ const ForgotPassword: Component = () => {
 
         <form onSubmit={handleReset} class="space-y-6 mt-12">
           <TextInput
-            label="E-Posta Adresi"
+            label={t('forgotPassword.emailLabel')}
             type="email"
             maxLength={255}
             value={state.email}
             onInput={(e) => setState("email", e.currentTarget.value)}
             validationState={validEmail()}
-            error="Geçersiz E-Posta formatı"
+            error={t('forgotPassword.emailError')}
             disabled={state.isSubmitting || emailIsLocked}
             class="mb-0"
           />
@@ -153,18 +154,18 @@ const ForgotPassword: Component = () => {
                 onVerify={(token) => {
                   setState("cfToken", token);
                 }}
-                onError={() => setState("error", "Güvenlik doğrulama başarısız oldu.")}
+                onError={() => setState("error", t('forgotPassword.turnstileFailed'))}
               />
             </div>
           </Show>
 
           <SubmitButton type="submit" loading={state.isSubmitting} disabled={isSubmitDisabled()}>
-            Sıfırlama Bağlantısını Gönder
+            {t('forgotPassword.submit')}
           </SubmitButton>
 
           <AuthFooter>
-            <span class="text-sm font-normal text-muted-foreground">Ya da geri dön. </span>
-            <a href={dynamicLoginRoute()} class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors">Giriş sayfası</a>
+            <span class="text-sm font-normal text-muted-foreground">{t('forgotPassword.orGoBack')} </span>
+            <a href={dynamicLoginRoute()} class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors">{t('forgotPassword.loginPage')}</a>
           </AuthFooter>
         </form>
       </Show>

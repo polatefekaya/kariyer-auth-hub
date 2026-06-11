@@ -24,6 +24,7 @@ import { theme } from "../stores/theme";
 import { computePasswordRules } from "../utils/passwordValidation";
 import { resetTurnstile } from "../utils/turnstile";
 import { trackAuthStep, trackAuthError } from '../utils/authFunnel';
+import { t } from '../i18n';
 
 const AccountSelectButton: Component<{
   title: string;
@@ -52,15 +53,15 @@ const AccountSelectButton: Component<{
 const getAccountDisplayInfo = (role: string) => {
   const normalizedRole = role.toLowerCase();
   if (normalizedRole === "company" || normalizedRole === "b" || normalizedRole === "employer") {
-    return { title: "Kurumsal İşveren", description: "Şirket profilim ile devam et." };
+    return { title: t('migrate.companyTitle'), description: t('migrate.companyDesc') };
   }
   if (normalizedRole === "admin" || normalizedRole === "super_admin" || normalizedRole === "moderator" || normalizedRole === "a") {
-    return { title: "Yönetici", description: "Yönetim paneli profilim ile devam et." };
+    return { title: t('migrate.adminTitle'), description: t('migrate.adminDesc') };
   }
   if (normalizedRole === "community" || normalizedRole === "co") {
-    return { title: "Topluluk", description: "Topluluk profilim ile devam et." };
+    return { title: t('migrate.communityTitle'), description: t('migrate.communityDesc') };
   }
-  return { title: "Bireysel Aday", description: "İş arayan profilim ile devam et." };
+  return { title: t('migrate.candidateTitle'), description: t('migrate.candidateDesc') };
 };
 
 const Migrate: Component = () => {
@@ -245,25 +246,23 @@ const Migrate: Component = () => {
     });
 
     if (authError) {
-      let errorMessage = "Bir hata oluştu. Lütfen tekrar deneyin.";
+      let errorMessage = t('migrate.errGeneric');
       const errStr = authError.message.toLowerCase();
 
       if (
         errStr.includes("already registered") ||
         errStr.includes("already exists")
       ) {
-        errorMessage =
-          "Hesabınız zaten yakın zamanda güncellenmiş. Lütfen giriş yapın.";
+        errorMessage = t('migrate.errAlreadyMigrated');
       } else if (errStr.includes("rate limit")) {
-        errorMessage =
-          "Çok fazla deneme yaptınız. Lütfen biraz bekleyip tekrar deneyin.";
+        errorMessage = t('migrate.errRateLimit');
       } else if (errStr.includes("security purposes")) {
         const match = errStr.match(/after (\d+) second/);
         errorMessage = match?.[1]
-          ? `Güvenlik nedeniyle lütfen ${match[1]} saniye bekleyin.`
-          : "Güvenlik nedeniyle lütfen kısa bir süre bekleyin.";
+          ? t('migrate.errSecurityWait', { count: match[1] })
+          : t('migrate.errSecurityWaitShort');
       } else if (errStr.includes("password")) {
-        errorMessage = "Şifreniz güvenlik kriterlerini karşılamıyor.";
+        errorMessage = t('migrate.errWeakPassword');
       } else {
         errorMessage = authError.message;
       }
@@ -308,7 +307,7 @@ const Migrate: Component = () => {
             d="M10 19l-7-7m0 0l7-7m-7 7h18"
           />
         </svg>
-        Geri
+        {t('migrate.back')}
       </button>
 
       <AuthHeader
@@ -337,22 +336,22 @@ const Migrate: Component = () => {
                 />
               </svg>
               <div>
-                <p class="font-bold mb-1">Hesap Çakışması</p>
+                <p class="font-bold mb-1">{t('migrate.conflictTitle')}</p>
                 <p class="opacity-90">
-                  Bu e-posta adresiyle birden fazla hesabınız var. Güncelleme işlemine devam etmek için öncelikli hesabınızı seçin.
+                  {t('migrate.conflictDesc')}
                 </p>
               </div>
             </div>
           </div>
 
           <h3 class="text-sm font-semibold text-foreground mb-3 px-1">
-            Devam edilecek hesabı seçin:
+            {t('migrate.chooseAccount')}
           </h3>
 
           <div class="flex flex-col gap-3">
             <Show
               when={state.ui.availableAccounts.length > 0}
-              fallback={<div class="p-4 text-center text-sm text-muted-foreground animate-pulse">Hesaplar yükleniyor...</div>}
+              fallback={<div class="p-4 text-center text-sm text-muted-foreground animate-pulse">{t('migrate.accountsLoading')}</div>}
             >
               <For each={state.ui.availableAccounts}>
                 {(role) => {
@@ -369,8 +368,7 @@ const Migrate: Component = () => {
             </Show>
           </div>
           <p class="text-xs text-muted-foreground mt-4 text-center">
-            *Diğer hesaba erişim için daha sonra destek talebi
-            oluşturabilirsiniz.
+            {t('migrate.supportNote')}
           </p>
         </div>
       </Show>
@@ -386,7 +384,7 @@ const Migrate: Component = () => {
                 when={!state.ui.isFetchingType}
                 fallback={
                   <span class="animate-pulse text-muted-foreground">
-                    Doğrulanıyor...
+                    {t('migrate.verifying')}
                   </span>
                 }
               >
@@ -409,7 +407,7 @@ const Migrate: Component = () => {
           </div>
 
           <TextInput
-            label="E-Posta Adresiniz"
+            label={t('migrate.emailLabel')}
             type="email"
             maxLength={255}
             value={state.payload.email}
@@ -421,7 +419,7 @@ const Migrate: Component = () => {
 
           <div class="flex flex-col gap-2">
             <TextInput
-              label="Yeni Şifrenizi Belirleyin"
+              label={t('migrate.passwordLabel')}
               type="password"
               maxLength={128}
               value={state.payload.password}
@@ -429,7 +427,7 @@ const Migrate: Component = () => {
                 setState("payload", "password", e.currentTarget.value)
               }
               validationState={validPassword()}
-              error="Güvenlik kriterlerine uymuyor"
+              error={t('migrate.passwordError')}
               disabled={state.ui.isSubmitting || state.ui.isFetchingType}
             />
             <Show when={state.payload.password.length > 0}>
@@ -440,12 +438,12 @@ const Migrate: Component = () => {
             </Show>
           </div>
           <TextInput
-              label="Yeni Şifrenizi Onaylayın"
+              label={t('migrate.confirmLabel')}
               type="password"
               value={state.payload.confirmPassword}
               onInput={(e) => setState("payload", "confirmPassword", e.currentTarget.value)}
               validationState={validConfirmPassword()}
-              error="Şifreler birbiriyle eşleşmiyor"
+              error={t('migrate.confirmError')}
               disabled={state.ui.isSubmitting}
             />
 
@@ -463,7 +461,7 @@ const Migrate: Component = () => {
                   setState(
                     "errors",
                     "global",
-                    "Güvenlik doğrulama başarısız oldu.",
+                    t('migrate.turnstileFailed'),
                   )
                 }
               />
@@ -475,30 +473,30 @@ const Migrate: Component = () => {
             loading={state.ui.isSubmitting}
             disabled={isSubmitDisabled()}
           >
-            Şifremi Güncelle
+            {t('migrate.submit')}
           </SubmitButton>
           <Show
             when={state.payload.accountType !== "admin"}
             fallback={
               <AuthFooter>
                 <span class="text-sm font-normal text-muted-foreground">
-                  Yönetici hesapları doğrudan oluşturulamaz.{" "}
+                  {t('migrate.adminNote')}{" "}
                 </span>
                 <a href="/login?type=a" class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors">
-                  Giriş sayfasına dön
+                  {t('migrate.adminBack')}
                 </a>
               </AuthFooter>
             }
           >
             <AuthFooter>
               <span class="text-sm font-normal text-foreground/60">
-                Farklı bir hesap mı açacaksınız?{" "}
+                {t('migrate.differentAccount')}{" "}
               </span>
               <a
                 href={dynamicRegisterRoute()}
                 class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors"
               >
-                Kayıt Ol
+                {t('migrate.register')}
               </a>
             </AuthFooter>
           </Show>

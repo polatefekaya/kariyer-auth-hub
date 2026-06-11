@@ -29,6 +29,7 @@ import { resetTurnstile } from "../utils/turnstile";
 import { saveAuthRedirect } from "../utils/sessionRedirect";
 import { useAccountType } from "../hooks/useAccountType";
 import { trackAuthStep, trackAuthError } from '../utils/authFunnel';
+import { t } from '../i18n';
 
 const CustomCheckbox: Component<{
   checked: boolean;
@@ -73,7 +74,7 @@ const CustomCheckbox: Component<{
         {props.linkText}
       </a>
       <Show when={props.secondLinkText && props.secondHref}>
-        {" ve "}
+        {t('register.and')}
         <a
           href={props.secondHref}
           target="_blank"
@@ -167,12 +168,12 @@ const Register: Component = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setState("status", "email", "invalid");
-      setState("messages", "email", "Geçerli bir e-posta adresi giriniz");
+      setState("messages", "email", t('register.emailInvalid'));
       return;
     }
 
     setState("status", "email", "checking");
-    setState("messages", "email", "Kontrol ediliyor...");
+    setState("messages", "email", t('register.emailChecking'));
 
     const controller = new AbortController();
 
@@ -189,16 +190,16 @@ const Register: Component = () => {
           const result = await response.json();
           if (result.success && !result.data.has_duplicates) {
             setState("status", "email", "available");
-            setState("messages", "email", "E-posta kullanılabilir");
+            setState("messages", "email", t('register.emailValid'));
           } else {
             setState("status", "email", "taken");
-            setState("messages", "email", "Bu e-posta adresi zaten kullanımda");
+            setState("messages", "email", t('register.emailTaken'));
           }
         }
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") return;
         setState("status", "email", "error");
-        setState("messages", "email", "Bağlantı hatası, tekrar deneyin");
+        setState("messages", "email", t('register.emailConnError'));
       }
     }, 500);
 
@@ -220,7 +221,7 @@ const Register: Component = () => {
     const phoneRegex = /^5\d{9}$/;
     if (!phoneRegex.test(phone)) {
       setState("status", "phone", "invalid");
-      setState("messages", "phone", "10 haneli olmalıdır (5XXXXXXXXX)");
+      setState("messages", "phone", t('register.phoneError'));
       return;
     }
 
@@ -317,18 +318,18 @@ const Register: Component = () => {
     });
 
     if (authError) {
-      let errorMessage = "Bir hata oluştu. Lütfen tekrar deneyin.";
+      let errorMessage = t('register.errGeneric');
       const errStr = authError.message.toLowerCase();
 
       if (errStr.includes("already registered") || errStr.includes("already exists")) {
-        errorMessage = "Bu e-posta adresi ile zaten bir hesap oluşturulmuş. Lütfen giriş yapın.";
+        errorMessage = t('register.errAlreadyRegistered');
       } else if (errStr.includes("rate limit")) {
-        errorMessage = "Çok fazla deneme yaptınız. Lütfen biraz bekleyip tekrar deneyin.";
+        errorMessage = t('register.errRateLimit');
       } else if (errStr.includes("security purposes")) {
         const match = errStr.match(/after (\d+) second/);
         errorMessage = match?.[1]
-          ? `Güvenlik nedeniyle lütfen ${match[1]} saniye bekleyin.`
-          : "Güvenlik nedeniyle lütfen kısa bir süre bekleyin.";
+          ? t('register.errSecurityWait', { count: match[1] })
+          : t('register.errSecurityWaitShort');
       } else {
         errorMessage = authError.message;
       }
@@ -338,7 +339,7 @@ const Register: Component = () => {
       setState("payload", "cfToken", null);
       resetTurnstile();
     } else if (data.user?.identities?.length === 0) {
-      const duplicateError = "Bu hesap zaten kullanımda. Lütfen giriş yapmayı deneyin.";
+      const duplicateError = t('register.errDuplicate');
       trackAuthError('registration', 'submit', duplicateError, { email: state.payload.email });
       setState("errors", "global", duplicateError);
       setState("payload", "cfToken", null);
@@ -375,29 +376,29 @@ const Register: Component = () => {
           <div class="space-y-4">
             <div class="grid grid-cols-2 gap-3">
               <TextInput
-                label="Adınız"
+                label={t('register.firstName')}
                 type="text"
                 maxLength={50}
                 value={state.payload.firstName}
                 onInput={(e) => setState("payload", "firstName", e.currentTarget.value)}
                 validationState={validFirstName() as "idle" | "valid" | "invalid"}
-                error="Zorunlu (Minimum 2 karakter)"
+                error={t('register.firstNameError')}
                 disabled={state.isSubmitting}
               />
               <TextInput
-                label="Soyadınız"
+                label={t('register.lastName')}
                 type="text"
                 maxLength={50}
                 value={state.payload.lastName}
                 onInput={(e) => setState("payload", "lastName", e.currentTarget.value)}
                 validationState={validLastName() as "idle" | "valid" | "invalid"}
-                error="Zorunlu (Minimum 2 karakter)"
+                error={t('register.lastNameError')}
                 disabled={state.isSubmitting}
               />
             </div>
 
             <TextInput
-              label="Telefon Numarası"
+              label={t('register.phone')}
               type="tel"
               maxLength={15}
               inputMode="numeric"
@@ -426,7 +427,7 @@ const Register: Component = () => {
             />
 
             <TextInput
-              label="E-Posta Adresi"
+              label={t('register.emailLabel')}
               type="email"
               maxLength={255}
               value={state.payload.email}
@@ -449,13 +450,13 @@ const Register: Component = () => {
 
             <div class="flex flex-col gap-2">
               <TextInput
-                label="Şifre"
+                label={t('register.passwordLabel')}
                 type="password"
                 maxLength={128}
                 value={state.payload.password}
                 onInput={(e) => setState("payload", "password", e.currentTarget.value)}
                 validationState={validPassword() as "idle" | "valid" | "invalid"}
-                error="Güvenlik kriterlerine uymuyor"
+                error={t('register.passwordError')}
                 disabled={state.isSubmitting}
                 autocomplete="off"
                 readOnly
@@ -467,13 +468,13 @@ const Register: Component = () => {
             </div>
 
             <TextInput
-              label="Şifre Tekrar"
+              label={t('register.confirmPassword')}
               type="password"
               maxLength={128}
               value={state.payload.confirmPassword}
               onInput={(e) => setState("payload", "confirmPassword", e.currentTarget.value)}
               validationState={validConfirmPassword()}
-              error="Şifreler eşleşmiyor"
+              error={t('register.confirmError')}
               disabled={state.isSubmitting}
               autocomplete="off"
             />
@@ -490,8 +491,8 @@ const Register: Component = () => {
                     onChange={(val) => setState("payload", "kvkkAccepted", val)}
                     disabled={state.isSubmitting}
                     label="İşveren KVKK"
-                    linkText="İşveren Aydınlatma ve Açık Rıza Metni"
-                    afterText="'ni okudum ve kabul ediyorum. *"
+                    linkText={t('register.isverenKvkkLink')}
+                    afterText={t('register.consentAfter')}
                     href={`${WEB_APP_URL}/kvkk-isveren`}
                   />
                   <CustomCheckbox
@@ -499,8 +500,8 @@ const Register: Component = () => {
                     onChange={(val) => setState("payload", "ticariIletiAccepted", val)}
                     disabled={state.isSubmitting}
                     label="Elektronik İleti"
-                    linkText="Elektronik İleti Onay Metni"
-                    afterText=" kapsamında tarafıma iletişim kurulmasını onaylıyorum."
+                    linkText={t('register.elektronikIletiLink')}
+                    afterText={t('register.ticariAfter')}
                     href={`${WEB_APP_URL}/acik-riza-isveren`}
                   />
                   <CustomCheckbox
@@ -508,8 +509,8 @@ const Register: Component = () => {
                     onChange={(val) => setState("payload", "sozlesmeAccepted", val)}
                     disabled={state.isSubmitting}
                     label="İşveren Sözleşmesi"
-                    linkText="İşveren Kullanıcı Sözleşmesi"
-                    afterText="'ni okudum ve kabul ediyorum. *"
+                    linkText={t('register.isverenSozlesmeLink')}
+                    afterText={t('register.consentAfter')}
                     href={`${WEB_APP_URL}/isveren-sozlesmesi`}
                   />
                 </>
@@ -523,10 +524,10 @@ const Register: Component = () => {
                 }}
                 disabled={state.isSubmitting}
                 label="KVKK ve Açık Rıza"
-                linkText="KVKK Aydınlatma Metni"
-                secondLinkText="Açık Rıza Metni"
+                linkText={t('register.kvkkLink')}
+                secondLinkText={t('register.acikRizaLink')}
                 secondHref={`${WEB_APP_URL}/acik-riza`}
-                afterText="'ni okudum ve kabul ediyorum. *"
+                afterText={t('register.consentAfter')}
                 href={`${WEB_APP_URL}/kvkk-aydinlatma`}
               />
               <CustomCheckbox
@@ -534,8 +535,8 @@ const Register: Component = () => {
                 onChange={(val) => setState("payload", "ticariIletiAccepted", val)}
                 disabled={state.isSubmitting}
                 label="Ticari İleti"
-                linkText="Ticari Elektronik İleti Onayı"
-                afterText=" kapsamında tarafıma iletişim kurulmasını onaylıyorum."
+                linkText={t('register.ticariLink')}
+                afterText={t('register.ticariAfter')}
                 href={`${WEB_APP_URL}/elektronik-ileti-onayi`}
               />
               <CustomCheckbox
@@ -543,8 +544,8 @@ const Register: Component = () => {
                 onChange={(val) => setState("payload", "sozlesmeAccepted", val)}
                 disabled={state.isSubmitting}
                 label="Kullanıcı Sözleşmesi"
-                linkText="Kullanıcı Sözleşmesi"
-                afterText="'ni okudum ve kabul ediyorum. *"
+                linkText={t('register.sozlesmeLink')}
+                afterText={t('register.consentAfter')}
                 href={`${WEB_APP_URL}/kullanici-sozlesmesi`}
               />
             </Show>
@@ -557,13 +558,13 @@ const Register: Component = () => {
                   size="flexible"
                   appearance="interaction-only"
                   onVerify={(token) => setState("payload", "cfToken", token)}
-                  onError={() => setState("errors", "global", "Güvenlik doğrulama başarısız oldu.")}
+                  onError={() => setState("errors", "global", t('register.turnstileFailed'))}
                 />
               </div>
             </Show>
 
             <SubmitButton type="submit" loading={state.isSubmitting} disabled={isSubmitDisabled()}>
-              Kayıt Ol
+              {t('register.submit')}
             </SubmitButton>
 
             <Show when={state.payload.accountType === "employee"}>
@@ -573,17 +574,17 @@ const Register: Component = () => {
                 redirectTo={`${WEB_APP_URL}/onboarding/${state.payload.accountType}`}
               />
               <div class="text-[10px] sm:text-xs text-center text-muted-foreground mt-1 px-2 leading-tight">
-                Sosyal hesapla kayıt olarak Kullanıcı Sözleşmesi ve KVKK metinlerini kabul etmiş sayılırsınız.
+                {t('register.socialConsent')}
               </div>
             </Show>
 
             <AuthFooter>
-              <span class="text-sm font-normal text-foreground/60">Zaten bir hesabın var mı? </span>
+              <span class="text-sm font-normal text-foreground/60">{t('register.hasAccount')} </span>
               <a
                 href={dynamicLoginRoute()}
                 class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors"
               >
-                Giriş yap
+                {t('register.loginLink')}
               </a>
             </AuthFooter>
           </div>

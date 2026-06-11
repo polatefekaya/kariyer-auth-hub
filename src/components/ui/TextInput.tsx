@@ -1,4 +1,5 @@
 import { type Component, type JSX, splitProps, createSignal, Show, createUniqueId } from 'solid-js';
+import { t } from '../../i18n';
 import { cn } from '../../utils/cn';
 import type { ValidationStatus } from '../../types/validation';
 
@@ -106,7 +107,7 @@ export const TextInput: Component<TextInputProps> = (props) => {
                 aria-live="assertive"
                 class="absolute bottom-full right-0 mb-2 w-max max-w-[240px] px-3 py-2 bg-foreground text-background text-xs font-medium rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none text-right"
               >
-                {local.error || "Geçersiz format."}
+                {local.error || t('ui.defaultError')}
                 <div class="absolute top-full right-2 border-4 border-transparent border-t-foreground"></div>
               </div>
             </div>
@@ -116,7 +117,7 @@ export const TextInput: Component<TextInputProps> = (props) => {
             <button
               type="button"
               tabIndex={-1}
-              aria-label={showPassword() ? "Şifreyi gizle" : "Şifreyi göster"}
+              aria-label={showPassword() ? t('ui.hidePassword') : t('ui.showPassword')}
               aria-pressed={showPassword()}
               aria-controls={inputId()}
               onClick={() => setShowPassword(!showPassword())}

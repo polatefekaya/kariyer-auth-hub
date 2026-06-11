@@ -1,4 +1,5 @@
 import { type Component, createSignal, Show } from 'solid-js';
+import { t } from '../../i18n';
 import { useSearchParams } from '@solidjs/router';
 import { supabase } from '../../lib/supabase';
 import { cn } from '../../utils/cn';
@@ -56,10 +57,10 @@ export const OAuthProviders: Component<OAuthProvidersProps> = (props) => {
 
       if (props.onError) {
         const errorStr = err.message.toLowerCase();
-        let friendlyError = "Sosyal hesap ile giriş yapılamadı. Lütfen tekrar deneyin.";
+        let friendlyError = t('oauthErrors.failed');
 
         if (errorStr.includes("user_canceled") || errorStr.includes("cancelled")) {
-          friendlyError = "Giriş işlemi iptal edildi.";
+          friendlyError = t('oauthErrors.cancelled');
         }
 
         props.onError(friendlyError);
@@ -77,7 +78,7 @@ export const OAuthProviders: Component<OAuthProvidersProps> = (props) => {
         </div>
         <div class="relative flex justify-center text-sm px-2">
           <span class="px-4 bg-background text-foreground/60 font-normal text-xs tracking-wide">
-            Ya da farklı bir yöntem ile devam et
+            {t('ui.orContinueWith')}
           </span>
         </div>
       </div>

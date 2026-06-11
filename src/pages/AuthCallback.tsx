@@ -10,10 +10,11 @@ import { IoReloadOutline } from "solid-icons/io";
 import { getAuthRedirect, clearAuthRedirect } from "../utils/sessionRedirect";
 import { trackAuthStep, completeAuthFunnel, trackAuthError } from '../utils/authFunnel';
 import { injectTraceparent } from '../tracing';
+import { t } from '../i18n';
 
 const AuthCallback: Component = () => {
   const navigate = useNavigate();
-  const [statusText, setStatusText] = createSignal("Kimlik doğrulanıyor...");
+  const [statusText, setStatusText] = createSignal(t('callback.authenticating'));
   const [error, setError] = createSignal<string | null>(null);
   const [manualRedirectUrl, setManualRedirectUrl] = createSignal<string | null>(null);
   const [isHandingOff, setIsHandingOff] = createSignal(false);
@@ -38,7 +39,7 @@ const AuthCallback: Component = () => {
   const executeHandoff = async (initialSession: Session) => {
     if (isHandingOff() || !initialSession?.access_token) return;
     setIsHandingOff(true);
-    setStatusText("Senkronizasyon bekleniyor...");
+    setStatusText(t('callback.syncing'));
 
     let activeSession = initialSession;
     let accountType = activeSession.user?.user_metadata?.account_type;
@@ -62,7 +63,7 @@ const AuthCallback: Component = () => {
 
     if (!accountType) {
       console.error("FATAL: Backend did not inject account_type in time.");
-      const timeoutError = "Hesap türü alınamadı. Lütfen tekrar giriş yapın.";
+      const timeoutError = t('callback.errAccountType');
       trackAuthError('oauth', 'callback', timeoutError);
       setError(timeoutError);
       setIsHandingOff(false);
@@ -72,7 +73,7 @@ const AuthCallback: Component = () => {
 
     completeAuthFunnel('oauth', { account_type: accountType });
     try { const { getPostHog } = await import('../posthog'); getPostHog()?.identify(activeSession.user.id); } catch {}
-    setStatusText("Uygulamaya geçiş yapılıyor...");
+    setStatusText(t('callback.redirecting'));
 
     const finalQueryParams = new URLSearchParams(window.location.search);
     const urlPreservedTarget = finalQueryParams.get("next");
@@ -94,8 +95,8 @@ const AuthCallback: Component = () => {
             }, 100);
 
     } catch (err) {
-      trackAuthError('oauth', 'callback', "Yönlendirme bağlantısı oluşturulamadı.");
-      setError("Yönlendirme bağlantısı oluşturulamadı.");
+      trackAuthError('oauth', 'callback', t('callback.errRedirect'));
+      setError(t('callback.errRedirect'));
     }
   };
 
@@ -136,7 +137,7 @@ const AuthCallback: Component = () => {
           <AuthHeader title={AuthHeaderTexts.callbackError().title} description={AuthHeaderTexts.callbackError().description} />
           <ErrorAlert message={error()} />
           <button onClick={() => navigate("/login", { replace: true })} class="mt-6 w-full px-4 py-3 font-semibold bg-primary text-primary-foreground rounded-xl hover:bg-primary-hover transition-colors">
-            Giriş'e dön
+            {t('callback.backToLogin')}
           </button>
         </div>
       </Show>
@@ -146,16 +147,16 @@ const AuthCallback: Component = () => {
            <div class="relative w-20 h-20 mb-8 flex items-center justify-center">
              <IoReloadOutline class="w-10 h-10 animate-spin text-primary" />
            </div>
-          <h2 class="text-xl font-semibold text-foreground mb-2">Doğrulanıyor</h2>
+          <h2 class="text-xl font-semibold text-foreground mb-2">{t('callback.verifyingTitle')}</h2>
           <p class="text-sm font-medium text-foreground/50 animate-pulse">{statusText()}</p>
 
           <Show when={manualRedirectUrl()}>
             <div class="mt-8 flex flex-col items-center animate-in slide-in-from-bottom-4 fade-in duration-500 w-full gap-4">
               <p class="text-xs text-center text-foreground/60 font-normal">
-                Tarayıcı otomatik yönlendirmeyi engellemiş olabilir. Uygulamaya dönmek için tıklayın:
+                {t('callback.redirectBlocked')}
               </p>
               <a href={manualRedirectUrl()!} class="font-semibold w-full text-center px-4 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary-hover transition-colors">
-                Uygulamaya Dön
+                {t('callback.returnToApp')}
               </a>
             </div>
           </Show>
