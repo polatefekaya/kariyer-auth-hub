@@ -27,12 +27,19 @@ export function writeCookieLang(lang: AppLanguage): void {
 export function readStoredLang(): AppLanguage | null {
   try {
     const raw = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    return coerceLang(raw ? JSON.parse(raw)?.lang : null);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Zustand persist format (kariyer-zamani-web): { state: { language }, version }
+    // Legacy auth-hub format: { lang }
+    return coerceLang(parsed?.state?.language ?? parsed?.lang);
   } catch { return null; }
 }
 
 export function writeStoredLang(lang: AppLanguage): void {
-  try { localStorage.setItem(LANGUAGE_STORAGE_KEY, JSON.stringify({ lang })); } catch { }
+  try {
+    // Write in Zustand persist format so kariyer-zamani-web can also read it
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, JSON.stringify({ state: { language: lang }, version: 0 }));
+  } catch { }
 }
 
 function detectBrowserLanguage(): AppLanguage | null {
