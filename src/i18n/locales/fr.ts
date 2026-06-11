@@ -114,6 +114,8 @@ export const fr = {
     isverenKvkkLink: 'Texte d\'information et de consentement employeur',
     elektronikIletiLink: 'Texte de consentement aux communications électroniques',
     isverenSozlesmeLink: 'Contrat d\'utilisation employeur',
+    blockedTitle: 'Action refusée',
+    blockedDesc: 'L\'inscription administrateur ne peut pas être effectuée ici.',
   },
   forgotPassword: {
     emailLabel: 'Adresse e-mail',

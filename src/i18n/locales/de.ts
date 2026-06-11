@@ -114,6 +114,8 @@ export const de = {
     isverenKvkkLink: 'Arbeitgeber-Aufklärungs- und Einwilligungstext',
     elektronikIletiLink: 'Text zur Einwilligung in elektronische Kommunikation',
     isverenSozlesmeLink: 'Arbeitgeber-Nutzungsvertrag',
+    blockedTitle: 'Aktion verweigert',
+    blockedDesc: 'Admin-Registrierung ist hier nicht möglich.',
   },
   forgotPassword: {
     emailLabel: 'E-Mail-Adresse',

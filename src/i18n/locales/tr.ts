@@ -114,6 +114,8 @@ export const tr = {
     isverenKvkkLink: 'İşveren Aydınlatma ve Açık Rıza Metni',
     elektronikIletiLink: 'Elektronik İleti Onay Metni',
     isverenSozlesmeLink: 'İşveren Kullanıcı Sözleşmesi',
+    blockedTitle: 'İşlem Reddedildi',
+    blockedDesc: 'Yönetici kaydı buradan yapılamaz.',
   },
   forgotPassword: {
     emailLabel: 'E-Posta Adresi',

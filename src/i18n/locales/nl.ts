@@ -114,6 +114,8 @@ export const nl = {
     isverenKvkkLink: 'Werkgever informatie- en toestemmingstekst',
     elektronikIletiLink: 'Toestemmingstekst elektronische communicatie',
     isverenSozlesmeLink: 'Werkgever gebruikersovereenkomst',
+    blockedTitle: 'Actie geweigerd',
+    blockedDesc: 'Beheerdersregistratie kan hier niet worden gedaan.',
   },
   forgotPassword: {
     emailLabel: 'E-mailadres',

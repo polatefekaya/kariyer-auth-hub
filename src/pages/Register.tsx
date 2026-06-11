@@ -151,7 +151,7 @@ const Register: Component = () => {
     const type = resolvedType();
     if (type === "admin" || type === "community") {
       console.warn(`[Security] Blocked public registration attempt for type: ${type}`);
-      navigate(`/login?type=${AccMapByType[type]}&error=İşlem Reddedildi&error_description=Yönetici kaydı buradan yapılamaz.`, { replace: true });
+      navigate(`/login?type=${AccMapByType[type]}&error=${encodeURIComponent(t('register.blockedTitle'))}&error_description=${encodeURIComponent(t('register.blockedDesc'))}`, { replace: true });
       return;
     }
     setState("payload", "accountType", type ?? "employee");

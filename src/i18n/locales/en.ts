@@ -114,6 +114,8 @@ export const en = {
     isverenKvkkLink: 'Employer Disclosure and Consent Text',
     elektronikIletiLink: 'Electronic Communication Consent Text',
     isverenSozlesmeLink: 'Employer User Agreement',
+    blockedTitle: 'Action Denied',
+    blockedDesc: 'Admin registration cannot be done here.',
   },
   forgotPassword: {
     emailLabel: 'Email Address',

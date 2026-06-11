@@ -114,6 +114,8 @@ export const it = {
     isverenKvkkLink: 'Testo informativo e di consenso del datore di lavoro',
     elektronikIletiLink: 'Testo di consenso alle comunicazioni elettroniche',
     isverenSozlesmeLink: 'Contratto utente datore di lavoro',
+    blockedTitle: 'Azione negata',
+    blockedDesc: 'La registrazione dell\'amministratore non può essere effettuata qui.',
   },
   forgotPassword: {
     emailLabel: 'Indirizzo e-mail',
