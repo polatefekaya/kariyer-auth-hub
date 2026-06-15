@@ -1,4 +1,5 @@
 import { type Component, createMemo } from 'solid-js';
+import { t } from '../../i18n';
 import { zxcvbn } from '@zxcvbn-ts/core';
 import { cn } from '../../utils/cn';
 
@@ -24,11 +25,11 @@ export const PasswordStrength: Component<PasswordStrengthProps> = (props) => {
 
   const getLabel = (s: number) => {
     switch (s) {
-      case 0: return 'Çok Güçsüz';
-      case 1: return 'Güçsüz';
-      case 2: return 'Normal';
-      case 3: return 'İyi';
-      case 4: return 'Harika';
+      case 0: return t('passwordStrength.veryWeak');
+      case 1: return t('passwordStrength.weak');
+      case 2: return t('passwordStrength.average');
+      case 3: return t('passwordStrength.good');
+      case 4: return t('passwordStrength.great');
       default: return '';
     }
   };
@@ -57,7 +58,7 @@ export const PasswordStrength: Component<PasswordStrengthProps> = (props) => {
   return (
     <div class="flex flex-col gap-2 mt-2 px-1">
       <div class="flex justify-between items-end">
-        <span class="text-xs text-muted-foreground">Düzey</span>
+        <span class="text-xs text-muted-foreground">{t('passwordStrength.level')}</span>
         <span class={cn(
           "text-xs font-medium tracking-wider transition-colors duration-200",
           score() === 0 ? "text-muted-foreground" : score() < 3 ? "text-warning" : "text-success"
@@ -73,11 +74,11 @@ export const PasswordStrength: Component<PasswordStrengthProps> = (props) => {
       </div>
 
       <div class="grid grid-cols-2 gap-y-1.5 mt-1">
-        <RuleItem met={props.rules.hasLength} text="8+ karakter" />
-        <RuleItem met={props.rules.hasUpper} text="1 büyük harf" />
-        <RuleItem met={props.rules.hasNumber} text="1 sayı" />
-        <RuleItem met={props.rules.hasSpecial} text="1 özel karakter" />
-        <RuleItem met={props.rules.hasScore} text="Düzey İyi ve üzeri olmalı" />
+        <RuleItem met={props.rules.hasLength} text={t('passwordStrength.ruleLength')} />
+        <RuleItem met={props.rules.hasUpper} text={t('passwordStrength.ruleUpper')} />
+        <RuleItem met={props.rules.hasNumber} text={t('passwordStrength.ruleNumber')} />
+        <RuleItem met={props.rules.hasSpecial} text={t('passwordStrength.ruleSpecial')} />
+        <RuleItem met={props.rules.hasScore} text={t('passwordStrength.ruleScore')} />
       </div>
     </div>
   );

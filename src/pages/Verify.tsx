@@ -19,6 +19,7 @@ import { AccMapByType } from "../types/account";
 import { getDefaultRedirect } from "../utils/redirectHelper";
 import { theme } from "../stores/theme";
 import { resetTurnstile } from "../utils/turnstile";
+import { t } from "../i18n";
 import { getAuthRedirect, clearAuthRedirect } from "../utils/sessionRedirect";
 import { useAccountType } from "../hooks/useAccountType";
 import { useSearchParams } from "@solidjs/router";
@@ -127,18 +128,18 @@ const Verify: Component = () => {
     });
 
     if (verifyError) {
-      let errorMessage = "Geçersiz doğrulama kodu.";
+      let errorMessage = t('verify.errInvalidCode');
       const errStr = verifyError.message.toLowerCase();
 
       if (errStr.includes("rate limit")) {
-        errorMessage = "Çok fazla deneme yaptınız. Lütfen biraz bekleyin.";
+        errorMessage = t('verify.errRateLimit');
       } else if (errStr.includes("expired")) {
-        errorMessage = "Kodun süresi dolmuş. Lütfen yeni bir kod isteyin.";
+        errorMessage = t('verify.errExpired');
       } else if (errStr.includes("security purposes")) {
         const match = errStr.match(/after (\d+) second/);
         errorMessage = match?.[1]
-          ? `Güvenlik nedeniyle lütfen ${match[1]} saniye bekleyin.`
-          : "Güvenlik nedeniyle lütfen kısa bir süre bekleyin.";
+          ? t('verify.errSecurityWait', { count: match[1] })
+          : t('verify.errSecurityWaitShort');
       }
 
       trackAuthError('registration', 'verify_error', errorMessage, { email: initialEmail });
@@ -178,7 +179,7 @@ const Verify: Component = () => {
     trackAuthStep('registration', 'resend_code', { email: initialEmail });
 
     if (turnstileSiteKey && !cfToken()) {
-      setError("Lütfen önce güvenlik doğrulamasını tamamlayın.");
+      setError(t('verify.turnstileRequired'));
       return;
     }
 
@@ -212,17 +213,16 @@ const Verify: Component = () => {
     });
 
     if (resendError) {
-      let errorMessage = "Kod gönderilirken bir hata oluştu.";
+      let errorMessage = t('verify.errResendFailed');
       const errStr = resendError.message.toLowerCase();
 
       if (errStr.includes("rate limit")) {
-        errorMessage =
-          "Çok sık kod istediniz. Lütfen e-postanızı kontrol edin veya biraz bekleyin.";
+        errorMessage = t('verify.errResendRateLimit');
       } else if (errStr.includes("security purposes")) {
         const match = errStr.match(/after (\d+) second/);
         errorMessage = match?.[1]
-          ? `Güvenlik nedeniyle lütfen ${match[1]} saniye bekleyin.`
-          : "Güvenlik nedeniyle lütfen kısa bir süre bekleyin.";
+          ? t('verify.errSecurityWait', { count: match[1] })
+          : t('verify.errSecurityWaitShort');
       } else {
         errorMessage = resendError.message;
       }
@@ -237,7 +237,7 @@ const Verify: Component = () => {
       setCfToken(null);
       resetTurnstile();
     } else {
-      setSuccessMsg("Yeni kod gönderildi! Lütfen e-postanızı kontrol edin.");
+      setSuccessMsg(t('verify.successResent'));
     }
   };
 
@@ -327,7 +327,7 @@ const Verify: Component = () => {
               onVerify={(token) => {
                 setCfToken(token);
               }}
-              onError={() => setError("Güvenlik doğrulaması başarısız oldu.")}
+              onError={() => setError(t('verify.turnstileError'))}
             />
           </div>
         </Show>
@@ -337,13 +337,12 @@ const Verify: Component = () => {
           loading={isSubmitting()}
           disabled={!isComplete()}
         >
-          Hesabını Doğrula
+          {t('verify.submit')}
         </SubmitButton>
 
         <div class="text-center mt-6 flex flex-col gap-2">
           <p class="text-xs text-primary/60 font-normal bg-secondary/60 py-2 px-3 rounded-lg inline-block border border-border">
-            Eğer e-postayı göremezsen lütfen spam (gereksiz) klasörünü de
-            kontrol et.
+            {t('verify.spamNote')}
           </p>
 
           <div class="mt-2 text-sm text-center">
@@ -351,12 +350,12 @@ const Verify: Component = () => {
               when={resendTimer() === 0}
               fallback={
                 <span class="font-medium text-foreground/50">
-                  {resendTimer()} saniye sonra yeniden gönderebilirsin.
+                  {t('verify.resendCountdown', { count: resendTimer() })}
                 </span>
               }
             >
               <span class="font-normal text-foreground/60">
-                Kodu almadın mı?{" "}
+                {t('verify.notReceived')}{" "}
               </span>
               <button
                 type="button"
@@ -364,20 +363,20 @@ const Verify: Component = () => {
                 disabled={isSubmitting()}
                 class="font-semibold text-primary hover:text-primary-hover transition-colors cursor-pointer disabled:text-foreground/50 disabled:cursor-not-allowed"
               >
-                Yeniden Gönder
+                {t('verify.resend')}
               </button>
             </Show>
           </div>
 
           <AuthFooter>
             <span class="text-sm font-normal text-muted-foreground">
-              Ya da geri dön.{" "}
+              {t('verify.orGoBack')}{" "}
             </span>
             <a
               href={dynamicLoginRoute()}
               class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors"
             >
-              Giriş sayfası
+              {t('verify.loginPage')}
             </a>
           </AuthFooter>
         </div>

@@ -5,6 +5,8 @@ import { session } from "../../stores/auth";
 import { FiSun, FiMoon, FiChevronDown, FiLogOut, FiUser } from "solid-icons/fi";
 import { useNavigate } from "@solidjs/router";
 import { supabase } from "../../lib/supabase";
+import LanguageToggle from "./LanguageToggle";
+import { t } from "../../i18n";
 
 type DropdownId = "login" | "register" | "profile";
 
@@ -62,18 +64,20 @@ const Navbar: Component = () => {
             }}
             tabIndex={0}
             role="button"
-            aria-label="Ana Sayfaya Git"
+            aria-label={t('nav.goHome')}
             class="flex ml-2 items-center gap-2 cursor-pointer transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
           >
             <KzLogo size={24} class="text-primary" aria-hidden={true} />
           </div>
 
           <div class="flex items-center gap-2 sm:gap-4">
+            <LanguageToggle />
+
             <button
               onClick={toggleTheme}
               class="p-2 mr-1 rounded-xl text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="Temayı Değiştir"
-              title={theme() === "dark" ? "Açık temaya geç" : "Koyu temaya geç"}
+              aria-label={t('nav.toggleTheme')}
+              title={theme() === "dark" ? t('nav.switchToLight') : t('nav.switchToDark')}
             >
               <Show when={theme() === "dark"} fallback={<FiMoon size={20} />}>
                 <FiSun size={20} />
@@ -90,7 +94,7 @@ const Navbar: Component = () => {
                       onClick={() => toggleDropdown("login")}
                       class="flex items-center gap-1 px-2 py-2 tracking-[0.15px] text-sm font-medium text-primary hover:text-primary-hover transition-colors focus:outline-none"
                     >
-                      Giriş Yap
+                      {t('nav.login')}
                       <span class={`inline-flex transition-transform duration-200 ${activeDropdown() === "login" ? "rotate-180" : ""}`}>
                         <FiChevronDown size={14} />
                       </span>
@@ -101,13 +105,13 @@ const Navbar: Component = () => {
                           onClick={() => handleNav("/login?type=c")}
                           class="w-full text-left cursor-pointer px-3 py-2 text-sm rounded-sm hover:bg-accent outline-none transition-colors"
                         >
-                          Aday Girişi
+                          {t('nav.loginCandidate')}
                         </button>
                         <button
                           onClick={() => handleNav("/login?type=b")}
                           class="w-full text-left cursor-pointer px-3 py-2 text-sm rounded-sm hover:bg-accent outline-none transition-colors"
                         >
-                          İşveren Girişi
+                          {t('nav.loginEmployer')}
                         </button>
                       </div>
                     </Show>
@@ -119,7 +123,7 @@ const Navbar: Component = () => {
                       onClick={() => toggleDropdown("register")}
                       class="flex items-center gap-1 px-3 sm:px-4 py-2 tracking-[0.15px] text-sm font-medium bg-primary text-primary-foreground rounded-xl hover:bg-primary-hover transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                     >
-                      Kayıt Ol
+                      {t('nav.register')}
                       <span class={`inline-flex transition-transform duration-200 ${activeDropdown() === "register" ? "rotate-180" : ""}`}>
                         <FiChevronDown size={14} />
                       </span>
@@ -130,13 +134,13 @@ const Navbar: Component = () => {
                           onClick={() => handleNav("/register?type=c")}
                           class="w-full text-left cursor-pointer px-3 py-2 text-sm rounded-sm hover:bg-accent outline-none transition-colors"
                         >
-                          Aday Kaydı
+                          {t('nav.registerCandidate')}
                         </button>
                         <button
                           onClick={() => handleNav("/register?type=b")}
                           class="w-full text-left cursor-pointer px-3 py-2 text-sm rounded-sm hover:bg-accent outline-none transition-colors"
                         >
-                          İşveren Kaydı
+                          {t('nav.registerEmployer')}
                         </button>
                       </div>
                     </Show>
@@ -149,7 +153,7 @@ const Navbar: Component = () => {
                 <button
                   onClick={() => toggleDropdown("profile")}
                   class="p-2 rounded-xl text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  aria-label="Hesap menüsü"
+                  aria-label={t('nav.accountMenu')}
                 >
                   <FiUser size={20} />
                 </button>
@@ -163,7 +167,7 @@ const Navbar: Component = () => {
                       class="w-full text-left cursor-pointer flex items-center gap-2 px-3 py-2 text-sm rounded-sm hover:bg-accent outline-none transition-colors text-destructive"
                     >
                       <FiLogOut size={14} />
-                      Çıkış Yap
+                      {t('nav.logout')}
                     </button>
                   </div>
                 </Show>

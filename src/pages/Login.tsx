@@ -12,6 +12,7 @@ import { OAuthProviders } from "../components/ui/OAuthProviders";
 import { AccMapByType, type AccountType } from "../types/account";
 import { AuthHeaderTexts } from "../constants/authTexts";
 import { getDefaultRedirect } from "../utils/redirectHelper";
+import { t } from "../i18n";
 import { theme } from "../stores/theme";
 import { resetTurnstile } from "../utils/turnstile";
 import { saveAuthRedirect, getAuthRedirect, clearAuthRedirect } from "../utils/sessionRedirect";
@@ -117,7 +118,7 @@ const Login: Component = () => {
             const hasAdminAccount = accounts.some((acc: any) => acc.role === "admin");
 
             if (hasAdminAccount) {
-              setState("errors", "global", "Bu mail ile kayıtlı farklı türde bir hesabınız var, lütfen doğru giriş panelini kullanınız.");
+              setState("errors", "global", t('login.wrongPanel'));
             } else {
               const mismatchAcc = accounts.find((acc: any) => acc.role !== currentRole)!;
               setState("mismatchRole", mismatchAcc.role as AccountType);
@@ -163,7 +164,7 @@ const Login: Component = () => {
         return;
       }
 
-      const errorMessage = "E-posta veya şifre hatalı.";
+      const errorMessage = t('login.invalidCredentials');
       trackAuthError('login', 'submit', errorMessage, { email: cleanEmail });
       setState("errors", "global", errorMessage);
       setState("payload", "cfToken", null);
@@ -196,13 +197,13 @@ const Login: Component = () => {
   const mismatchMessage = createMemo(() => {
     const mismatch = state.mismatchRole;
     if (!mismatch) return "";
-    const roleLabel: Partial<Record<AccountType, string>> = {
-      employee: "aday",
-      company: "işveren",
-      community: "topluluk",
+    const roleKeyMap: Partial<Record<AccountType, string>> = {
+      employee: t('login.roleEmployee'),
+      company: t('login.roleCompany'),
+      community: t('login.roleCommunity'),
     };
-    const label = roleLabel[mismatch] ?? mismatch;
-    return `Bu e-posta adresiyle kayıtlı bir ${label} hesabınız bulunuyor. ${mismatchLoginLabel()} panelinden giriş yapmanız gerekiyor.`;
+    const role = roleKeyMap[mismatch] ?? mismatch;
+    return t('login.mismatchMsg', { role, panel: mismatchLoginLabel() });
   });
 
   const handleNavigateToCorrectLogin = () => {
@@ -230,24 +231,24 @@ const Login: Component = () => {
             class="mt-1.5 text-primary hover:text-primary-hover text-sm font-semibold transition-colors hover:underline underline-offset-2"
             onClick={handleNavigateToCorrectLogin}
           >
-            {mismatchLoginLabel()}'ne git →
+            {t('login.goToPanel', { panel: mismatchLoginLabel() })}
           </button>
         </div>
       </Show>
 
       <form onSubmit={handleLogin} class="space-y-4 mt-8">
         <TextInput
-          label="E-Posta Adresi"
+          label={t('login.emailLabel')}
           type="email"
           value={state.payload.email}
           onInput={(e) => setState("payload", "email", e.currentTarget.value)}
           validationState={validEmail()}
-          error="Geçersiz E-Posta formatı"
+          error={t('login.emailError')}
           disabled={state.isSubmitting || state.isCheckingLegacy}
         />
 
         <TextInput
-          label="Şifre"
+          label={t('login.passwordLabel')}
           type="password"
           value={state.payload.password}
           onInput={(e) =>
@@ -259,7 +260,7 @@ const Login: Component = () => {
               href={dynamicForgotRoute()}
               class="text-xs font-semibold text-primary hover:text-primary-hover transition-colors"
             >
-              Şifreni mi unuttun?
+              {t('login.forgotPassword')}
             </a>
           }
         />
@@ -275,7 +276,7 @@ const Login: Component = () => {
                 setState("payload", "cfToken", token);
               }}
               onError={() =>
-                setState("errors", "global", "Güvenlik doğrulama başarısız oldu.")
+                setState("errors", "global", t('login.turnstileFailed'))
               }
             />
           </div>
@@ -286,7 +287,7 @@ const Login: Component = () => {
           loading={state.isSubmitting || state.isCheckingLegacy}
           disabled={isSubmitDisabled()}
         >
-          {state.isCheckingLegacy ? "Kontrol Ediliyor..." : "Giriş Yap"}
+          {state.isCheckingLegacy ? t('login.checking') : t('login.submit')}
         </SubmitButton>
 
         <Show when={state.payload.accountType === "employee"}>
@@ -298,13 +299,13 @@ const Login: Component = () => {
         <Show when={state.payload.accountType !== "admin"}>
           <AuthFooter>
             <span class="text-sm font-normal text-foreground/60">
-              Hesabın yok mu?{" "}
+              {t('login.noAccount')}{" "}
             </span>
             <a
               href={dynamicRegisterRoute()}
               class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors"
             >
-              Kayıt ol
+              {t('login.register')}
             </a>
           </AuthFooter>
         </Show>

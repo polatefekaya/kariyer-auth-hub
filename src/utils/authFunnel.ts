@@ -1,6 +1,7 @@
 import { trace, SpanStatusCode } from '@opentelemetry/api';
 import { metrics } from '@opentelemetry/api';
 import { captureAuthEvent } from './posthog-events';
+import { authOriginAttributes } from './authOrigin';
 
 const tracer = trace.getTracer('auth-hub');
 const meter = metrics.getMeter('auth-hub');
@@ -63,9 +64,14 @@ export function trackAuthStep(
   const now = performance.now();
   const prev = loadState();
 
+  // Apply-origin context (e.g. registration started from a job apply). Added to
+  // the span + PostHog event, but NOT to the metric labels below (low cardinality).
+  const originAttrs = authOriginAttributes();
+
   const attributes: Record<string, string> = {
     'auth_funnel.name': funnel,
     'auth_funnel.step': step,
+    ...originAttrs,
     ...attrs,
   };
 
@@ -90,7 +96,7 @@ export function trackAuthStep(
     sessionStorage.setItem('otel_auth_traceparent', `00-${ctx.traceId}-${ctx.spanId}-01`);
   } catch {}
   span.end();
-  captureAuthEvent(`auth/${step}`, { funnel, ...attrs });
+  captureAuthEvent(`auth/${step}`, { funnel, ...originAttrs, ...attrs });
 
   saveState({
     funnel,
@@ -107,6 +113,7 @@ export function trackAuthStep(
  */
 export function completeAuthFunnel(funnel: string, attrs?: Record<string, string>): void {
   const prev = loadState();
+  const originAttrs = authOriginAttributes();
 
   const span = tracer.startSpan(`auth.${funnel}.complete`, {
     attributes: {
@@ -115,11 +122,12 @@ export function completeAuthFunnel(funnel: string, attrs?: Record<string, string
       'auth_funnel.total_duration_ms': prev
         ? String(Math.round(performance.now() - prev.startTimestamp))
         : 'unknown',
+      ...originAttrs,
       ...attrs,
     },
   });
   span.end();
-  captureAuthEvent(`auth/${funnel}_complete`, attrs);
+  captureAuthEvent(`auth/${funnel}_complete`, { ...originAttrs, ...attrs });
 
   // Persist traceparent for the redirect
   try {

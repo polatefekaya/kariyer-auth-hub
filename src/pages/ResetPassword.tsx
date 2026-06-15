@@ -15,6 +15,7 @@ import { getDefaultRedirect } from '../utils/redirectHelper';
 import { useAccountType } from '../hooks/useAccountType';
 import { trackAuthStep, completeAuthFunnel, trackAuthError } from '../utils/authFunnel';
 import { injectTraceparent } from '../tracing';
+import { t } from '../i18n';
 
 type ValidationState = 'idle' | 'valid' | 'invalid';
 
@@ -67,7 +68,7 @@ const ResetPassword: Component = () => {
       if (error || !data.session) {
         setTimeout(() => {
           if (!state.isSessionValid) {
-            setState('error', 'Şifre sıfırlama bağlantınız geçersiz veya süresi dolmuş. Lütfen yeni bir bağlantı talep edin.');
+            setState('error', t('resetPassword.errInvalidLink'));
             setState('isSessionChecking', false);
           }
         }, 2000);
@@ -117,13 +118,13 @@ const ResetPassword: Component = () => {
     });
 
     if (updateError) {
-      let errorMessage = "Şifre güncellenirken bir hata oluştu. Lütfen tekrar deneyin.";
+      let errorMessage = t('resetPassword.errGeneric');
       const errStr = updateError.message.toLowerCase();
 
       if (errStr.includes("different from the old password") || errStr.includes("same password")) {
-        errorMessage = "Yeni şifreniz eski şifrenizle aynı olamaz.";
+        errorMessage = t('resetPassword.errSamePassword');
       } else if (errStr.includes("expired")) {
-        errorMessage = "Oturum süreniz dolmuş. Lütfen yeniden şifre sıfırlama bağlantısı talep edin.";
+        errorMessage = t('resetPassword.errSessionExpired');
       } else {
         errorMessage = updateError.message;
       }
@@ -158,7 +159,7 @@ const ResetPassword: Component = () => {
 
       <Show when={state.success}>
         <div class="p-4 bg-success-subtle text-success-subtle-foreground text-sm font-bold rounded-xl border border-success/20 text-center mb-6 animate-in fade-in zoom-in duration-300">
-          Şifreniz başarıyla güncellendi! Uygulamaya yönlendiriliyorsunuz...
+          {t('resetPassword.success')}
         </div>
       </Show>
 
@@ -170,7 +171,7 @@ const ResetPassword: Component = () => {
           fallback={
             <div class="flex flex-col items-center justify-center py-8 gap-3">
               <div class="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-              <p class="text-sm text-muted-foreground font-medium">Bağlantı doğrulanıyor...</p>
+              <p class="text-sm text-muted-foreground font-medium">{t('resetPassword.verifying')}</p>
             </div>
           }
         >
@@ -182,11 +183,11 @@ const ResetPassword: Component = () => {
                   href={dynamicForgotRoute()}
                   class="w-full px-4 py-3 bg-primary text-primary-foreground font-bold rounded-xl text-center hover:bg-primary-hover transition-colors"
                 >
-                  Yeni Bağlantı Talep Et
+                  {t('resetPassword.requestNewLink')}
                 </a>
                 <AuthFooter>
-                  <span class="text-sm font-normal text-muted-foreground">Ya da </span>
-                  <a href={dynamicLoginRoute()} class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors">Giriş yap</a>
+                  <span class="text-sm font-normal text-muted-foreground">{t('resetPassword.orOr')}</span>
+                  <a href={dynamicLoginRoute()} class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors">{t('resetPassword.loginLink')}</a>
                 </AuthFooter>
               </div>
             }
@@ -194,13 +195,13 @@ const ResetPassword: Component = () => {
             <form onSubmit={handleReset} class="space-y-4 mt-6">
               <div class="flex flex-col gap-2">
                 <TextInput
-                  label="Yeni Şifre"
+                  label={t('resetPassword.passwordLabel')}
                   type="password"
                   maxLength={128}
                   value={state.password}
                   onInput={(e) => setState('password', e.currentTarget.value)}
                   validationState={validPassword()}
-                  error="Güvenlik kriterlerine uymuyor"
+                  error={t('resetPassword.passwordError')}
                   disabled={state.isSubmitting}
                 />
                 <Show when={state.password.length > 0}>
@@ -209,13 +210,13 @@ const ResetPassword: Component = () => {
               </div>
 
               <TextInput
-                label="Yeni Şifre Tekrar"
+                label={t('resetPassword.confirmLabel')}
                 type="password"
                 maxLength={128}
                 value={state.confirmPassword}
                 onInput={(e) => setState('confirmPassword', e.currentTarget.value)}
                 validationState={validConfirm()}
-                error="Şifreler eşleşmiyor"
+                error={t('resetPassword.confirmError')}
                 disabled={state.isSubmitting}
               />
 
@@ -225,12 +226,12 @@ const ResetPassword: Component = () => {
                 disabled={isSubmitDisabled()}
                 class="mt-12"
               >
-                Şifreni Güncelle
+                {t('resetPassword.submit')}
               </SubmitButton>
 
               <AuthFooter>
-                <span class="text-sm font-normal text-muted-foreground">Ya da geri dön. </span>
-                <a href={dynamicLoginRoute()} class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors">Giriş sayfası</a>
+                <span class="text-sm font-normal text-muted-foreground">{t('resetPassword.orGoBack')} </span>
+                <a href={dynamicLoginRoute()} class="text-sm font-semibold text-primary hover:text-primary-hover transition-colors">{t('resetPassword.loginPage')}</a>
               </AuthFooter>
             </form>
           </Show>
