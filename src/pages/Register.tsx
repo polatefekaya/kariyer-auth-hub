@@ -26,7 +26,7 @@ import type { ValidationStatus } from "../types/validation";
 import { theme } from "../stores/theme";
 import { computePasswordRules } from "../utils/passwordValidation";
 import { resetTurnstile } from "../utils/turnstile";
-import { saveAuthRedirect } from "../utils/sessionRedirect";
+import { saveAuthRedirect, getAuthRedirect } from "../utils/sessionRedirect";
 import { useAccountType } from "../hooks/useAccountType";
 import { trackAuthStep, trackAuthError } from '../utils/authFunnel';
 import { t } from '../i18n';
@@ -126,6 +126,27 @@ const Register: Component = () => {
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
   const API_BASE_URL = import.meta.env.VITE_API_URL;
   const WEB_APP_URL = import.meta.env.VITE_WEB_APP_URL || window.location.origin;
+
+  // Post-auth we send the user to onboarding, but that URL must carry the deferred
+  // "apply-on-register" intent (kz_apply) from the original redirect_to. The web app's
+  // PendingApplicationOrchestrator replays it primarily from localStorage, which is
+  // PER-ORIGIN and is lost whenever the landing origin (VITE_WEB_APP_URL, e.g. www) differs
+  // from where the user browsed jobs (e.g. apex) — so the URL param is the origin-independent
+  // channel. Without this, a registered applicant lands on a bare /onboarding URL with no
+  // intent on it and nothing ever auto-applies.
+  const buildOnboardingUrl = (accountType: string): string => {
+    const url = new URL(`${WEB_APP_URL}/onboarding/${accountType}`);
+    const original = getAuthRedirect();
+    if (original) {
+      try {
+        const applyIntent = new URL(original).searchParams.get("kz_apply");
+        if (applyIntent) url.searchParams.set("kz_apply", applyIntent);
+      } catch {
+        /* original wasn't an absolute URL — nothing to carry */
+      }
+    }
+    return url.toString();
+  };
 
   onMount(() => {
     trackAuthStep('registration', 'page_view', { account_type: resolvedType() || 'employee' });
@@ -346,7 +367,9 @@ const Register: Component = () => {
       resetTurnstile();
     } else {
       trackAuthStep('registration', 'email_sent', { email: state.payload.email });
-      const onboardingUrl = `${WEB_APP_URL}/onboarding/${state.payload.accountType}`;
+      // Read the original redirect (still saved from onMount) and carry its apply intent
+      // onto the onboarding URL BEFORE overwriting the saved redirect with it.
+      const onboardingUrl = buildOnboardingUrl(state.payload.accountType);
       saveAuthRedirect(onboardingUrl);
       navigate(`/verify?email=${encodeURIComponent(cleanEmail)}`, {
         replace: true,
@@ -571,7 +594,7 @@ const Register: Component = () => {
               <OAuthProviders
                 actionText="Sign Up"
                 onError={(msg) => setState("errors", "global", msg)}
-                redirectTo={`${WEB_APP_URL}/onboarding/${state.payload.accountType}`}
+                redirectTo={buildOnboardingUrl(state.payload.accountType)}
               />
               <div class="text-[10px] sm:text-xs text-center text-muted-foreground mt-1 px-2 leading-tight">
                 {t('register.socialConsent')}
