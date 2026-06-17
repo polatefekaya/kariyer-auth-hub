@@ -151,6 +151,10 @@ const Verify: Component = () => {
       inputRef?.focus();
     } else if (data.session) {
       completeAuthFunnel('registration', { email: initialEmail });
+      // Identify on the Supabase auth UUID at the moment of account creation — same id the
+      // web app uses — so the anonymous pre-register events (carried in via kz_did) and the
+      // post-register apply events stitch onto ONE PostHog person. Mirrors Login/AuthCallback.
+      try { const { getPostHog } = await import('../posthog'); getPostHog()?.identify(data.session.user.id); } catch {}
       const intendedTarget = getAuthRedirect();
       const targetRedirect = getDefaultRedirect(
         resolvedType() ? AccMapByType[resolvedType()!] : undefined
