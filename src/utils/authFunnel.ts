@@ -142,6 +142,8 @@ export function completeAuthFunnel(funnel: string, attrs?: Record<string, string
  * Track auth funnel dropoff (user abandoned the flow).
  */
 export function trackAuthDropoff(funnel: string, lastStep: string, reason?: string): void {
+  const originAttrs = authOriginAttributes();
+
   funnelDropoffCounter.add(1, {
     'auth_funnel.name': funnel,
     'auth_funnel.last_step': lastStep,
@@ -153,12 +155,29 @@ export function trackAuthDropoff(funnel: string, lastStep: string, reason?: stri
       'auth_funnel.name': funnel,
       'auth_funnel.last_step': lastStep,
       'auth_funnel.dropoff_reason': reason ?? 'unknown',
+      ...originAttrs,
     },
   });
   span.setStatus({ code: SpanStatusCode.ERROR, message: `Dropoff at ${lastStep}` });
   span.end();
+  // Mirror to PostHog so abandonment shows in the product funnel (was OTel-only before).
+  // originAttrs lets it be filtered to the job-apply cohort just like the step events.
+  captureAuthEvent(`auth/${funnel}_dropoff`, { last_step: lastStep, reason: reason ?? 'unknown', ...originAttrs });
 
   clearState();
+}
+
+/**
+ * If a funnel is mid-flight (a step was recorded but it never completed), record an
+ * explicit abandonment with the last step reached. Safe to call from a pagehide /
+ * visibilitychange handler: completeAuthFunnel() clears the persisted state on success,
+ * so a successful redirect is never miscounted as a dropoff.
+ */
+export function trackAuthDropoffIfMidFlight(reason: string = 'page_hide'): void {
+  const prev = loadState();
+  if (prev?.funnel && prev?.step) {
+    trackAuthDropoff(prev.funnel, prev.step, reason);
+  }
 }
 
 /**

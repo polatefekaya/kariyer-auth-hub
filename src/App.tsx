@@ -1,9 +1,10 @@
-import { type Component, type JSX, createEffect } from 'solid-js';
+import { type Component, type JSX, createEffect, onMount, onCleanup } from 'solid-js';
 import { useLocation } from '@solidjs/router';
 import ThemeWatcher from './ThemeWatcher';
 import AuthWatcher from './AuthWatcher';
 import Navbar from './components/navbar/Navbar';
 import { captureAuthEvent } from './utils/posthog-events';
+import { trackAuthDropoffIfMidFlight } from './utils/authFunnel';
 
 const App: Component<{ children?: JSX.Element }> = (props) => {
   const location = useLocation();
@@ -12,6 +13,16 @@ const App: Component<{ children?: JSX.Element }> = (props) => {
       path: location.pathname,
       search: location.search,
     });
+  });
+
+  // Record an explicit abandonment if the user leaves mid-funnel (form open, never
+  // submitted/completed). This is the "left without registering and without an error"
+  // signal the funnel can't infer on its own. Successful redirects clear the funnel
+  // state first, so they're never counted as dropoffs.
+  onMount(() => {
+    const onHide = () => trackAuthDropoffIfMidFlight('page_hide');
+    window.addEventListener('pagehide', onHide);
+    onCleanup(() => window.removeEventListener('pagehide', onHide));
   });
 
   return (
