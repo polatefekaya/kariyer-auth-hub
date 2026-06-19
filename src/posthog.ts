@@ -30,8 +30,7 @@ if (POSTHOG_KEY && POSTHOG_HOST) {
       // Dev runs on different localhost origins (no shared cookie) — kz_did is the real stitch.
       cross_subdomain_cookie: !IS_DEV,
       debug: IS_DEV,
-      disable_session_recording: true, // auth hub handles passwords — no replay
-      ...(incomingDid ? { bootstrap: { distinctID: incomingDid, isIdentifiedID: false } } : {}),
+...(incomingDid ? { bootstrap: { distinctID: incomingDid, isIdentifiedID: false } } : {}),
       loaded: (ph) => {
         try {
           const otelSessionId = sessionStorage.getItem('otel_session_id');
