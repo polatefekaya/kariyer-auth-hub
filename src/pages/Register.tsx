@@ -292,7 +292,7 @@ const Register: Component = () => {
     if (state.status.phone !== "available") return true;
 
     if (!state.payload.kvkkAccepted) return true;
-    if (!state.payload.acikRizaAccepted) return true;
+    if (state.payload.accountType === "employee" && !state.payload.acikRizaAccepted) return true;
     if (!state.payload.sozlesmeAccepted) return true;
 
     if (turnstileSiteKey && !state.payload.cfToken) return true;

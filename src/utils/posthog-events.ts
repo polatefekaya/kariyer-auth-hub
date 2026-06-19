@@ -1,11 +1,11 @@
 import { trace } from '@opentelemetry/api';
+import { getPostHog } from '../posthog';
 
 export function captureAuthEvent(
   eventName: string,
   properties?: Record<string, unknown>,
 ): void {
   try {
-    const { getPostHog } = require('../posthog');
     const ph = getPostHog();
     if (!ph) return;
 
