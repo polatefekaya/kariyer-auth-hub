@@ -233,7 +233,7 @@ const Migrate: Component = () => {
 
     const cleanEmail = state.payload.email.trim().toLowerCase();
 
-    const { data, error: authError } = await supabase.auth.signUp({
+    const { error: authError } = await supabase.auth.signUp({
       email: cleanEmail,
       password: state.payload.password,
       options: {
