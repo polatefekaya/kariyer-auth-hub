@@ -273,7 +273,6 @@ const Migrate: Component = () => {
       resetTurnstile();
     } else {
       trackAuthStep('migration', 'submitted_verify', { email: cleanEmail });
-      console.log("Migration initiated for:", data.user?.id);
       navigate(`/verify?email=${encodeURIComponent(cleanEmail)}`, {
         replace: true,
       });
