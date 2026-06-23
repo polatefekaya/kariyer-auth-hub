@@ -19,6 +19,7 @@ import { saveAuthRedirect, getAuthRedirect, clearAuthRedirect } from "../utils/s
 import { useAccountType } from "../hooks/useAccountType";
 import { trackAuthStep, completeAuthFunnel, trackAuthError } from '../utils/authFunnel';
 import { injectTraceparent } from '../tracing';
+import { rejectUnauthorizedAdmin } from '../utils/verifyAdmin';
 
 type ValidationState = "idle" | "valid" | "invalid";
 
@@ -170,6 +171,19 @@ const Login: Component = () => {
       setState("payload", "cfToken", null);
       resetTurnstile();
     } else {
+      const accountType = data.session.user?.user_metadata?.account_type;
+      if (accountType === "admin" || accountType === "super_admin") {
+        const isAdmin = await rejectUnauthorizedAdmin(data.session.access_token);
+        if (!isAdmin) {
+          trackAuthError('login', 'submit', 'unauthorized_admin', { email: cleanEmail });
+          setState("errors", "global", t('login.unauthorizedAdmin'));
+          setState("payload", "cfToken", null);
+          resetTurnstile();
+          setState("isSubmitting", false);
+          return;
+        }
+      }
+
       completeAuthFunnel('login', { email: cleanEmail, account_type: state.payload.accountType });
       try { const { getPostHog } = await import('../posthog'); getPostHog()?.identify(data.session.user.id); } catch {}
       const intendedTarget = getAuthRedirect();

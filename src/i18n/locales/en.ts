@@ -70,6 +70,7 @@ export const en = {
     wrongPanel: 'There is a different type of account registered with this email. Please use the correct login panel.',
     mismatchMsg: 'You have a {{role}} account registered with this email. You need to log in from the {{panel}} panel.',
     goToPanel: 'Go to {{panel}} →',
+    unauthorizedAdmin: 'This account does not have admin panel access.',
     noAccount: "Don't have an account?",
     register: 'Sign up',
     roleEmployee: 'candidate',

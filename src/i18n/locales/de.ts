@@ -70,6 +70,7 @@ export const de = {
     wrongPanel: 'Mit dieser E-Mail ist ein anderer Kontotyp registriert. Bitte verwenden Sie das richtige Anmeldeportal.',
     mismatchMsg: 'Mit dieser E-Mail ist ein {{role}}-Konto registriert. Sie müssen sich über das {{panel}}-Portal anmelden.',
     goToPanel: 'Zum {{panel}}-Portal →',
+    unauthorizedAdmin: 'Dieses Konto hat keinen Zugang zum Admin-Panel.',
     noAccount: 'Kein Konto?',
     register: 'Registrieren',
     roleEmployee: 'Bewerber',
