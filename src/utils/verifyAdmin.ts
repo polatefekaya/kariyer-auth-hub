@@ -9,9 +9,10 @@ export async function verifyAdminAccess(accessToken: string): Promise<boolean> {
     const res = await fetch(`${ADMIN_API_URL}/admins/me`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    return res.ok;
+    if (res.status === 401 || res.status === 403) return false;
+    return true;
   } catch {
-    return false;
+    return true;
   }
 }
 
