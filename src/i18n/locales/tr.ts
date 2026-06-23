@@ -70,6 +70,7 @@ export const tr = {
     wrongPanel: 'Bu mail ile kayıtlı farklı türde bir hesabınız var, lütfen doğru giriş panelini kullanınız.',
     mismatchMsg: 'Bu e-posta adresiyle kayıtlı bir {{role}} hesabınız bulunuyor. {{panel}} panelinden giriş yapmanız gerekiyor.',
     goToPanel: "{{panel}}'ne git →",
+    unauthorizedAdmin: 'Bu hesap yönetici paneline erişim yetkisine sahip değil.',
     noAccount: 'Hesabın yok mu?',
     register: 'Kayıt ol',
     roleEmployee: 'aday',

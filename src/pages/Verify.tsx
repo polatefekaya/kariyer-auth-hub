@@ -25,6 +25,7 @@ import { useAccountType } from "../hooks/useAccountType";
 import { useSearchParams } from "@solidjs/router";
 import { trackAuthStep, completeAuthFunnel, trackAuthError } from '../utils/authFunnel';
 import { injectTraceparent } from '../tracing';
+import { rejectUnauthorizedAdmin } from '../utils/verifyAdmin';
 
 const Verify: Component = () => {
   const [searchParams] = useSearchParams();
@@ -150,10 +151,22 @@ const Verify: Component = () => {
       resetTurnstile();
       inputRef?.focus();
     } else if (data.session) {
+      const accountType = data.session.user?.user_metadata?.account_type;
+      if (accountType === "admin" || accountType === "super_admin") {
+        const isAdmin = await rejectUnauthorizedAdmin(data.session.access_token);
+        if (!isAdmin) {
+          trackAuthError('registration', 'verify_error', 'unauthorized_admin', { email: initialEmail });
+          setError(t('login.unauthorizedAdmin'));
+          setCode("");
+          if (inputRef) inputRef.value = "";
+          setCfToken(null);
+          resetTurnstile();
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       completeAuthFunnel('registration', { email: initialEmail });
-      // Identify on the Supabase auth UUID at the moment of account creation — same id the
-      // web app uses — so the anonymous pre-register events (carried in via kz_did) and the
-      // post-register apply events stitch onto ONE PostHog person. Mirrors Login/AuthCallback.
       try { const { getPostHog } = await import('../posthog'); getPostHog()?.identify(data.session.user.id); } catch {}
       const intendedTarget = getAuthRedirect();
       const targetRedirect = getDefaultRedirect(

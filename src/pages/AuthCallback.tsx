@@ -11,6 +11,7 @@ import { getAuthRedirect, clearAuthRedirect } from "../utils/sessionRedirect";
 import { trackAuthStep, completeAuthFunnel, trackAuthError } from '../utils/authFunnel';
 import { injectTraceparent } from '../tracing';
 import { t } from '../i18n';
+import { rejectUnauthorizedAdmin } from '../utils/verifyAdmin';
 
 const AuthCallback: Component = () => {
   const navigate = useNavigate();
@@ -69,6 +70,16 @@ const AuthCallback: Component = () => {
       setIsHandingOff(false);
       await supabase.auth.signOut();
       return;
+    }
+
+    if (accountType === "admin" || accountType === "super_admin") {
+      const isAdmin = await rejectUnauthorizedAdmin(activeSession.access_token);
+      if (!isAdmin) {
+        trackAuthError('oauth', 'callback', 'unauthorized_admin');
+        setError(t('login.unauthorizedAdmin'));
+        setIsHandingOff(false);
+        return;
+      }
     }
 
     completeAuthFunnel('oauth', { account_type: accountType });

@@ -70,6 +70,7 @@ export const it = {
     wrongPanel: 'Con questa e-mail è registrato un account di tipo diverso. Usa il portale di accesso corretto.',
     mismatchMsg: 'Hai un account {{role}} registrato con questa e-mail. Devi accedere dal portale {{panel}}.',
     goToPanel: 'Vai a {{panel}} →',
+    unauthorizedAdmin: "Questo account non ha accesso al pannello di amministrazione.",
     noAccount: 'Non hai un account?',
     register: 'Registrati',
     roleEmployee: 'candidato',

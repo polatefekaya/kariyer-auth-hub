@@ -70,6 +70,7 @@ export const nl = {
     wrongPanel: 'Er is een ander type account geregistreerd met dit e-mailadres. Gebruik het juiste inlogportaal.',
     mismatchMsg: 'U heeft een {{role}}-account geregistreerd met dit e-mailadres. U moet inloggen via het {{panel}}-portaal.',
     goToPanel: 'Naar {{panel}} →',
+    unauthorizedAdmin: 'Dit account heeft geen toegang tot het admin-paneel.',
     noAccount: 'Nog geen account?',
     register: 'Registreren',
     roleEmployee: 'kandidaat',
