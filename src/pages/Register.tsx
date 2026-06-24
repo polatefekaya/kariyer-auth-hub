@@ -27,6 +27,7 @@ import { theme } from "../stores/theme";
 import { computePasswordRules } from "../utils/passwordValidation";
 import { resetTurnstile } from "../utils/turnstile";
 import { saveAuthRedirect, getAuthRedirect } from "../utils/sessionRedirect";
+import { ALLOWED_ORIGINS } from "../types/config";
 import { useAccountType } from "../hooks/useAccountType";
 import { trackAuthStep, trackAuthError } from '../utils/authFunnel';
 import { t } from '../i18n';
@@ -135,8 +136,19 @@ const Register: Component = () => {
   // channel. Without this, a registered applicant lands on a bare /onboarding URL with no
   // intent on it and nothing ever auto-applies.
   const buildOnboardingUrl = (accountType: string): string => {
-    const url = new URL(`${WEB_APP_URL}/onboarding/${accountType}`);
     const original = getAuthRedirect();
+    let base = WEB_APP_URL;
+    if (original) {
+      try {
+        const parsed = new URL(original);
+        if (ALLOWED_ORIGINS.has(parsed.origin)) {
+          base = parsed.origin;
+        }
+      } catch {
+        /* original wasn't an absolute URL — nothing to carry */
+      }
+    }
+    const url = new URL(`${base}/onboarding/${accountType}`);
     if (original) {
       try {
         const applyIntent = new URL(original).searchParams.get("kz_apply");
