@@ -1,6 +1,7 @@
 import {
   type Component,
   createMemo,
+  createSignal,
   onMount,
   Show,
   createEffect,
@@ -96,6 +97,11 @@ const Register: Component = () => {
   const navigate = useNavigate();
   const { resolvedType, currentTypeParam } = useAccountType("employee");
 
+  // Job-draft flow (IlanVer rewrite spec §16): when arriving from an anonymous
+  // job draft, the email is prefilled and — in the token-less fallback — locked
+  // so the new account matches the draft's email (its only link).
+  const [emailLocked, setEmailLocked] = createSignal(false);
+
   const [state, setState] = createStore({
     payload: {
       firstName: "",
@@ -151,8 +157,18 @@ const Register: Component = () => {
     const url = new URL(`${base}/onboarding/${accountType}`);
     if (original) {
       try {
-        const applyIntent = new URL(original).searchParams.get("kz_apply");
+        const originalParams = new URL(original).searchParams;
+        // Deferred apply-on-register intent.
+        const applyIntent = originalParams.get("kz_apply");
         if (applyIntent) url.searchParams.set("kz_apply", applyIntent);
+        // Anonymous job-draft claim tokens (so DraftJobOrchestrator can claim
+        // on return — origin-independent, same rationale as kz_apply above).
+        const draftUid = originalParams.get("draft_uid");
+        const claimToken = originalParams.get("claim_token");
+        if (draftUid && claimToken) {
+          url.searchParams.set("draft_uid", draftUid);
+          url.searchParams.set("claim_token", claimToken);
+        }
       } catch {
         /* original wasn't an absolute URL — nothing to carry */
       }
@@ -168,6 +184,31 @@ const Register: Component = () => {
     if (appRedirect) {
       saveAuthRedirect(appRedirect);
       setSearchParams({ redirect_to: undefined }, { replace: true });
+    }
+
+    // Job-draft flow: prefill the email from ?email so the anonymous draft links
+    // to the new account. Lock it only in the token-less fallback (?lock_email=
+    // true and no claim tokens on the saved redirect) — then the email is the
+    // sole link. With tokens present the field stays editable.
+    const rawEmail = searchParams.email;
+    const emailParam = Array.isArray(rawEmail) ? rawEmail[0] : rawEmail;
+    if (emailParam) {
+      let decodedEmail = emailParam;
+      try { decodedEmail = decodeURIComponent(emailParam); } catch { /* use raw */ }
+      setState("payload", "email", decodedEmail);
+
+      const rawLock = searchParams.lock_email;
+      const lockRequested = (Array.isArray(rawLock) ? rawLock[0] : rawLock) === "true";
+      let hasClaimTokens = false;
+      const saved = getAuthRedirect();
+      if (saved) {
+        try {
+          const sp = new URL(saved).searchParams;
+          hasClaimTokens = !!(sp.get("draft_uid") && sp.get("claim_token"));
+        } catch { /* not an absolute URL */ }
+      }
+      setEmailLocked(lockRequested && !hasClaimTokens);
+      setSearchParams({ email: undefined, lock_email: undefined }, { replace: true });
     }
 
     const rawError = searchParams.error_description || searchParams.error;
@@ -477,10 +518,10 @@ const Register: Component = () => {
                   : "idle"
               }
               error={state.messages.email}
-              disabled={state.isSubmitting}
+              disabled={state.isSubmitting || emailLocked()}
               autocomplete="off"
               readOnly
-              onFocus={(e) => e.currentTarget.removeAttribute("readonly")}
+              onFocus={(e) => { if (!emailLocked()) e.currentTarget.removeAttribute("readonly"); }}
             />
 
             <div class="flex flex-col gap-2">
