@@ -169,6 +169,16 @@ const Register: Component = () => {
           url.searchParams.set("draft_uid", draftUid);
           url.searchParams.set("claim_token", claimToken);
         }
+        // Anonymous CV-draft claim tokens (namespaced so they don't collide with the
+        // job draft_uid/claim_token above; DraftCvOrchestrator claims on return via
+        // recoverCvDraftClaimFromUrl — survives a cross-origin landing where the
+        // per-origin localStorage draft is lost).
+        const cvDraftId = originalParams.get("cv_draft_id");
+        const cvClaimToken = originalParams.get("cv_claim_token");
+        if (cvDraftId && cvClaimToken) {
+          url.searchParams.set("cv_draft_id", cvDraftId);
+          url.searchParams.set("cv_claim_token", cvClaimToken);
+        }
       } catch {
         /* original wasn't an absolute URL — nothing to carry */
       }
