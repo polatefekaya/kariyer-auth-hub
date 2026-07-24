@@ -101,6 +101,8 @@ const Register: Component = () => {
   // job draft, the email is prefilled and — in the token-less fallback — locked
   // so the new account matches the draft's email (its only link).
   const [emailLocked, setEmailLocked] = createSignal(false);
+  // Phone prefilled + locked when arriving from an anonymous job draft (?phone + ?lock_phone).
+  const [phoneLocked, setPhoneLocked] = createSignal(false);
 
   const [state, setState] = createStore({
     payload: {
@@ -219,6 +221,35 @@ const Register: Component = () => {
       }
       setEmailLocked(lockRequested && !hasClaimTokens);
       setSearchParams({ email: undefined, lock_email: undefined }, { replace: true });
+    }
+
+    // Job-draft flow: prefill the phone from ?phone so the new account uses the
+    // poster's number. Lock ONLY in the token-less fallback (?lock_phone=true and no
+    // claim tokens) — same rule as email; with tokens present it stays editable.
+    // Reactive phone validation (createEffect) marks a valid prefilled number
+    // "available" automatically.
+    const rawPhone = searchParams.phone;
+    const phoneParam = Array.isArray(rawPhone) ? rawPhone[0] : rawPhone;
+    if (phoneParam) {
+      let decodedPhone = phoneParam;
+      try { decodedPhone = decodeURIComponent(phoneParam); } catch { /* use raw */ }
+      let clean = decodedPhone.replace(/\D/g, "");
+      if (clean.startsWith("90")) clean = clean.substring(2);
+      if (clean.startsWith("0")) clean = clean.substring(1);
+      setState("payload", "phone", clean.substring(0, 10));
+
+      const rawLockP = searchParams.lock_phone;
+      const lockRequestedP = (Array.isArray(rawLockP) ? rawLockP[0] : rawLockP) === "true";
+      let hasClaimTokensP = false;
+      const savedP = getAuthRedirect();
+      if (savedP) {
+        try {
+          const spP = new URL(savedP).searchParams;
+          hasClaimTokensP = !!(spP.get("draft_uid") && spP.get("claim_token"));
+        } catch { /* not an absolute URL */ }
+      }
+      setPhoneLocked(lockRequestedP && !hasClaimTokensP);
+      setSearchParams({ phone: undefined, lock_phone: undefined }, { replace: true });
     }
 
     const rawError = searchParams.error_description || searchParams.error;
@@ -509,7 +540,7 @@ const Register: Component = () => {
                   : "idle"
               }
               error={state.messages.phone}
-              disabled={state.isSubmitting}
+              disabled={phoneLocked() || state.isSubmitting}
             />
 
             <TextInput
