@@ -181,6 +181,26 @@ const Register: Component = () => {
           url.searchParams.set("cv_draft_id", cvDraftId);
           url.searchParams.set("cv_claim_token", cvClaimToken);
         }
+        // Where the user was actually headed. Onboarding used to hard-redirect to
+        // /profil, so anyone who set out to finish a CV (or anything else with a
+        // destination) silently lost it: the CV Studio's post-register flush is
+        // triggered by /cv-olustur?cv_download=1, which never got reached.
+        //
+        // Carried as a PATH ONLY and re-validated by the web app before use — an
+        // absolute URL from a query param would be an open redirect. This is
+        // deliberately generic: every future "finish what you started" flow gets it
+        // for free instead of adding another param to this allow-list.
+        try {
+          const parsedOriginal = new URL(original);
+          if (ALLOWED_ORIGINS.has(parsedOriginal.origin)) {
+            const next = parsedOriginal.pathname + parsedOriginal.search;
+            if (next && next !== "/" && !next.startsWith("//")) {
+              url.searchParams.set("next", next);
+            }
+          }
+        } catch {
+          /* not an absolute URL — nothing to carry */
+        }
       } catch {
         /* original wasn't an absolute URL — nothing to carry */
       }
