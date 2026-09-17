@@ -9,6 +9,7 @@ import { AuthHeaderTexts } from "../constants/authTexts";
 import { IoReloadOutline } from "solid-icons/io";
 import { getAuthRedirect, clearAuthRedirect } from "../utils/sessionRedirect";
 import { trackAuthStep, completeAuthFunnel, trackAuthError } from '../utils/authFunnel';
+import { gtmSignUp } from '../utils/gtmEvents';
 import { injectTraceparent } from '../tracing';
 import { t } from '../i18n';
 import { rejectUnauthorizedAdmin } from '../utils/verifyAdmin';
@@ -34,6 +35,26 @@ const AuthCallback: Component = () => {
       return defaultTarget;
     } catch (err) {
       return defaultTarget;
+    }
+  };
+
+  // Marketing funnel (GTM) `sign_up` for OAuth. This callback serves both new
+  // sign-ups and plain logins; Supabase doesn't flag which, so a user whose
+  // account was created within the last few minutes is treated as new. Guarded
+  // per session so a callback reload can't double count.
+  const OAUTH_SIGNUP_WINDOW_MS = 5 * 60 * 1000;
+  const reportOAuthSignUp = (session: Session) => {
+    try {
+      const user = session.user;
+      const createdAt = user?.created_at ? Date.parse(user.created_at) : NaN;
+      if (Number.isNaN(createdAt) || Date.now() - createdAt > OAUTH_SIGNUP_WINDOW_MS) return;
+      const guardKey = 'kz_gtm_sign_up_reported';
+      if (sessionStorage.getItem(guardKey)) return;
+      sessionStorage.setItem(guardKey, '1');
+      const provider = String(user.app_metadata?.provider ?? 'oauth');
+      gtmSignUp(provider);
+    } catch {
+      /* analytics must never break the handoff */
     }
   };
 
@@ -84,6 +105,7 @@ const AuthCallback: Component = () => {
 
     completeAuthFunnel('oauth', { account_type: accountType });
     try { const { getPostHog } = await import('../posthog'); getPostHog()?.identify(activeSession.user.id); } catch {}
+    reportOAuthSignUp(activeSession);
     setStatusText(t('callback.redirecting'));
 
     const finalQueryParams = new URLSearchParams(window.location.search);
