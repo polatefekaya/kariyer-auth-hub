@@ -31,6 +31,7 @@ import { saveAuthRedirect, getAuthRedirect } from "../utils/sessionRedirect";
 import { ALLOWED_ORIGINS } from "../types/config";
 import { useAccountType } from "../hooks/useAccountType";
 import { trackAuthStep, trackAuthError } from '../utils/authFunnel';
+import { gtmRegistrationFormView, gtmSignUp, registrationContext } from '../utils/gtmEvents';
 import { t } from '../i18n';
 
 const CustomCheckbox: Component<{
@@ -217,6 +218,8 @@ const Register: Component = () => {
       saveAuthRedirect(appRedirect);
       setSearchParams({ redirect_to: undefined }, { replace: true });
     }
+    // Marketing funnel (GTM). After the redirect is saved so source_page/job_id resolve.
+    gtmRegistrationFormView();
 
     // Job-draft flow: prefill the email from ?email so the anonymous draft links
     // to the new account. Lock it only in the token-less fallback (?lock_email=
@@ -481,6 +484,9 @@ const Register: Component = () => {
       resetTurnstile();
     } else {
       trackAuthStep('registration', 'email_sent', { email: state.payload.email });
+      // Marketing funnel (GTM): the server confirmed the account exists. Context is
+      // read now, while the original redirect (with its job intent) is still saved.
+      gtmSignUp('email', registrationContext());
       // Read the original redirect (still saved from onMount) and carry its apply intent
       // onto the onboarding URL BEFORE overwriting the saved redirect with it.
       const onboardingUrl = buildOnboardingUrl(state.payload.accountType);
