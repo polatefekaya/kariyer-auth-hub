@@ -212,11 +212,14 @@ const Register: Component = () => {
   onMount(() => {
     trackAuthStep('registration', 'page_view', { account_type: resolvedType() || 'employee' });
 
-    const rawRedirect = searchParams.redirect_to;
+    const urlSearchParam = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("redirect_to") : null;
+    const rawRedirect = searchParams.redirect_to || urlSearchParam;
     const appRedirect = Array.isArray(rawRedirect) ? rawRedirect[0] : rawRedirect;
     if (appRedirect) {
-      saveAuthRedirect(appRedirect);
-      setSearchParams({ redirect_to: undefined }, { replace: true });
+      const saved = saveAuthRedirect(appRedirect);
+      if (saved) {
+        setSearchParams({ redirect_to: undefined }, { replace: true });
+      }
     }
     // Marketing funnel (GTM). After the redirect is saved so source_page/job_id resolve.
     gtmRegistrationFormView();

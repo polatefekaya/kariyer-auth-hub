@@ -19,8 +19,15 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
   throw new Error('Root element not found. The HTML file is missing the <div id="root"></div>.');
 }
 
+const LoginRedirect = () => {
+  const search = typeof window !== "undefined" ? window.location.search : "";
+  const hash = typeof window !== "undefined" ? window.location.hash : "";
+  return <Navigate href={`/login${search}${hash}`} />;
+};
+
 render(() => (
   <Router root={App}>
+    <Route path="/" component={LoginRedirect} />
     <Route path="/login" component={Login} />
     <Route path="/register" component={Register} />
     <Route path="/reset-password" component={ResetPassword} />
@@ -29,6 +36,6 @@ render(() => (
     <Route path={"/migrate"} component={Migrate} />
     <Route path="/auth-callback" component={AuthCallback} />
     
-    <Route path="*" component={() => <Navigate href="/login" />} />
+    <Route path="*" component={LoginRedirect} />
   </Router>
 ), root!);
