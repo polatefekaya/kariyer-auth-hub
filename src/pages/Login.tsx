@@ -15,7 +15,7 @@ import { getDefaultRedirect } from "../utils/redirectHelper";
 import { t } from "../i18n";
 import { theme } from "../stores/theme";
 import { resetTurnstile } from "../utils/turnstile";
-import { saveAuthRedirect, getAuthRedirect, clearAuthRedirect } from "../utils/sessionRedirect";
+import { saveAuthRedirect, getAuthRedirect, clearAuthRedirect, isAllowedRedirect } from "../utils/sessionRedirect";
 import { useAccountType } from "../hooks/useAccountType";
 import { trackAuthStep, completeAuthFunnel, trackAuthError } from '../utils/authFunnel';
 import { injectTraceparent } from '../tracing';
@@ -47,11 +47,14 @@ const Login: Component = () => {
   onMount(() => {
     trackAuthStep('login', 'page_view', { account_type: accountTypeFromUrl() || 'employee' });
 
-    const rawRedirect = searchParams.redirect_to;
+    const urlSearchParam = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("redirect_to") : null;
+    const rawRedirect = searchParams.redirect_to || urlSearchParam;
     const appRedirect = Array.isArray(rawRedirect) ? rawRedirect[0] : rawRedirect;
     if (appRedirect) {
-      saveAuthRedirect(appRedirect);
-      setSearchParams({ redirect_to: undefined }, { replace: true });
+      const saved = saveAuthRedirect(appRedirect);
+      if (saved) {
+        setSearchParams({ redirect_to: undefined }, { replace: true });
+      }
     }
 
     const rawError = searchParams.error_description || searchParams.error;
@@ -186,13 +189,21 @@ const Login: Component = () => {
 
       completeAuthFunnel('login', { email: cleanEmail, account_type: state.payload.accountType });
       try { const { getPostHog } = await import('../posthog'); getPostHog()?.identify(data.session.user.id); } catch {}
-      const intendedTarget = getAuthRedirect();
+      const urlSearchParam = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("redirect_to") : null;
+      const rawRedirect = searchParams.redirect_to || urlSearchParam;
+      const appRedirect = Array.isArray(rawRedirect) ? rawRedirect[0] : rawRedirect;
+      const validFallback = appRedirect && isAllowedRedirect(appRedirect) ? appRedirect : null;
+      const intendedTarget = getAuthRedirect() || validFallback;
 
       if (intendedTarget) {
         clearAuthRedirect();
-        const url = new URL(intendedTarget);
-        url.hash = `access_token=${data.session.access_token}&refresh_token=${data.session.refresh_token}&expires_in=${data.session.expires_in}`;
-        window.location.replace(injectTraceparent(url.toString()));
+        try {
+          const url = new URL(intendedTarget);
+          url.hash = `access_token=${data.session.access_token}&refresh_token=${data.session.refresh_token}&expires_in=${data.session.expires_in}`;
+          window.location.replace(injectTraceparent(url.toString()));
+        } catch {
+          window.location.href = injectTraceparent(getDefaultRedirect(AccMapByType[state.payload.accountType]));
+        }
       } else {
         window.location.href = injectTraceparent(getDefaultRedirect(AccMapByType[state.payload.accountType]));
       }
