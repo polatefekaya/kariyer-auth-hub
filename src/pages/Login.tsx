@@ -51,10 +51,7 @@ const Login: Component = () => {
     const rawRedirect = searchParams.redirect_to || urlSearchParam;
     const appRedirect = Array.isArray(rawRedirect) ? rawRedirect[0] : rawRedirect;
     if (appRedirect) {
-      const saved = saveAuthRedirect(appRedirect);
-      if (saved) {
-        setSearchParams({ redirect_to: undefined }, { replace: true });
-      }
+      saveAuthRedirect(appRedirect);
     }
 
     const rawError = searchParams.error_description || searchParams.error;
@@ -193,18 +190,23 @@ const Login: Component = () => {
       const rawRedirect = searchParams.redirect_to || urlSearchParam;
       const appRedirect = Array.isArray(rawRedirect) ? rawRedirect[0] : rawRedirect;
       const validFallback = appRedirect && isAllowedRedirect(appRedirect) ? appRedirect : null;
-      const intendedTarget = getAuthRedirect() || validFallback;
+      const intendedTarget = validFallback || getAuthRedirect();
+
+      console.info("[auth] Post-login redirect target resolved:", { intendedTarget, validFallback, storage: getAuthRedirect() });
 
       if (intendedTarget) {
-        clearAuthRedirect();
         try {
           const url = new URL(intendedTarget);
           url.hash = `access_token=${data.session.access_token}&refresh_token=${data.session.refresh_token}&expires_in=${data.session.expires_in}`;
+          clearAuthRedirect();
           window.location.replace(injectTraceparent(url.toString()));
-        } catch {
+          return;
+        } catch (err) {
+          console.error("[auth] Failed navigating to intendedTarget:", intendedTarget, err);
           window.location.href = injectTraceparent(getDefaultRedirect(AccMapByType[state.payload.accountType]));
         }
       } else {
+        console.warn("[auth] No intendedTarget resolved, falling back to default:", getDefaultRedirect(AccMapByType[state.payload.accountType]));
         window.location.href = injectTraceparent(getDefaultRedirect(AccMapByType[state.payload.accountType]));
       }
     }
@@ -235,7 +237,10 @@ const Login: Component = () => {
     const role = state.mismatchRole;
     if (!role) return;
     setState("mismatchRole", null);
-    navigate(`/login?type=${AccMapByType[role]}`);
+    const rawRedirect = searchParams.redirect_to;
+    const redirectParam = Array.isArray(rawRedirect) ? rawRedirect[0] : rawRedirect;
+    const redirectQuery = redirectParam ? `&redirect_to=${encodeURIComponent(redirectParam)}` : "";
+    navigate(`/login?type=${AccMapByType[role]}${redirectQuery}`);
   };
 
   return (

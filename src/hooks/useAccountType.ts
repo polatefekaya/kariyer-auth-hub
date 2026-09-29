@@ -22,9 +22,18 @@ export function useAccountType(fallback?: AccountType) {
     );
   });
 
-  const currentTypeParam = createMemo(() =>
-    resolvedType() ? `?type=${AccMapByType[resolvedType()!]}` : ""
-  );
+  const currentTypeParam = createMemo(() => {
+    const parts: string[] = [];
+    if (resolvedType()) {
+      parts.push(`type=${AccMapByType[resolvedType()!]}`);
+    }
+    const rawRedirect = searchParams.redirect_to;
+    const redirectParam = Array.isArray(rawRedirect) ? rawRedirect[0] : rawRedirect;
+    if (redirectParam) {
+      parts.push(`redirect_to=${encodeURIComponent(redirectParam)}`);
+    }
+    return parts.length > 0 ? `?${parts.join("&")}` : "";
+  });
 
   return { resolvedType, currentTypeParam };
 }
