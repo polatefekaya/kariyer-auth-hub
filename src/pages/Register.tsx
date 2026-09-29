@@ -216,10 +216,7 @@ const Register: Component = () => {
     const rawRedirect = searchParams.redirect_to || urlSearchParam;
     const appRedirect = Array.isArray(rawRedirect) ? rawRedirect[0] : rawRedirect;
     if (appRedirect) {
-      const saved = saveAuthRedirect(appRedirect);
-      if (saved) {
-        setSearchParams({ redirect_to: undefined }, { replace: true });
-      }
+      saveAuthRedirect(appRedirect);
     }
     // Marketing funnel (GTM). After the redirect is saved so source_page/job_id resolve.
     gtmRegistrationFormView();
