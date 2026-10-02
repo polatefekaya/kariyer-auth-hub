@@ -20,7 +20,7 @@ import { useAccountType } from "../hooks/useAccountType";
 import { trackAuthStep, completeAuthFunnel, trackAuthError } from '../utils/authFunnel';
 import { injectTraceparent } from '../tracing';
 import { rejectUnauthorizedAdmin } from '../utils/verifyAdmin';
-import { writeSessionCookie } from '../utils/cookieSession';
+import { clearSessionCookie } from '../utils/cookieSession';
 
 type ValidationState = "idle" | "valid" | "invalid";
 
@@ -68,7 +68,8 @@ const Login: Component = () => {
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        writeSessionCookie(session);
+        // The session is shared through sharedAuthStorage; drop the older duplicate cookie.
+        clearSessionCookie();
         const validFallback = appRedirect && isAllowedRedirect(appRedirect) ? appRedirect : null;
         const intendedTarget = validFallback || getAuthRedirect();
         if (intendedTarget) {
@@ -203,7 +204,7 @@ const Login: Component = () => {
         }
       }
 
-      writeSessionCookie(data.session);
+      clearSessionCookie();
       completeAuthFunnel('login', { email: cleanEmail, account_type: state.payload.accountType });
       try { const { getPostHog } = await import('../posthog'); getPostHog()?.identify(data.session.user.id); } catch {}
       const urlSearchParam = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("redirect_to") : null;
