@@ -1,10 +1,11 @@
 import { type Component, createSignal, Show } from "solid-js";
 import { KzLogo } from "./KzLogo";
 import { theme, setTheme, writeCookieTheme, writeStoredTheme } from "../../stores/theme";
-import { session } from "../../stores/auth";
+import { session, setSession } from "../../stores/auth";
 import { FiSun, FiMoon, FiChevronDown, FiLogOut, FiUser } from "solid-icons/fi";
 import { useNavigate } from "@solidjs/router";
-import { supabase } from "../../lib/supabase";
+import { AUTH_STORAGE_KEY, supabase } from "../../lib/supabase";
+import { sharedAuthStorage } from "../../lib/sharedAuthStorage";
 import LanguageToggle from "./LanguageToggle";
 import { t } from "../../i18n";
 
@@ -39,7 +40,9 @@ const Navbar: Component = () => {
 
   const handleLogout = async () => {
     setActiveDropdown(null);
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+    sharedAuthStorage.removeItem(AUTH_STORAGE_KEY);
+    setSession(null);
     navigate("/login");
   };
 

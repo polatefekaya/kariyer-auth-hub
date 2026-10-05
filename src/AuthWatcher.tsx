@@ -1,5 +1,6 @@
 import { onMount, onCleanup } from 'solid-js';
-import { supabase } from './lib/supabase';
+import { AUTH_STORAGE_KEY, supabase } from './lib/supabase';
+import { watchSharedAuthSession } from './lib/sharedAuthStorage';
 import { setSession } from './stores/auth';
 
 const AuthWatcher = () => {
@@ -12,7 +13,11 @@ const AuthWatcher = () => {
       setSession(newSession);
     });
 
-    onCleanup(() => subscription.unsubscribe());
+    const stopWatching = watchSharedAuthSession(supabase, AUTH_STORAGE_KEY, setSession);
+    onCleanup(() => {
+      subscription.unsubscribe();
+      stopWatching();
+    });
   });
 
   return null;
