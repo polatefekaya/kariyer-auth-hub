@@ -20,6 +20,7 @@ import { useAccountType } from "../hooks/useAccountType";
 import { trackAuthStep, completeAuthFunnel, trackAuthError } from '../utils/authFunnel';
 import { injectTraceparent } from '../tracing';
 import { rejectUnauthorizedAdmin } from '../utils/verifyAdmin';
+import { clearSessionCookie } from '../utils/cookieSession';
 
 type ValidationState = "idle" | "valid" | "invalid";
 
@@ -64,6 +65,25 @@ const Login: Component = () => {
       }
       setSearchParams({ error: undefined, error_description: undefined }, { replace: true });
     }
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        // The session is shared through sharedAuthStorage; drop the older duplicate cookie.
+        clearSessionCookie();
+        const validFallback = appRedirect && isAllowedRedirect(appRedirect) ? appRedirect : null;
+        const intendedTarget = validFallback || getAuthRedirect();
+        if (intendedTarget) {
+          try {
+            const url = new URL(intendedTarget);
+            url.hash = `access_token=${session.access_token}&refresh_token=${session.refresh_token}&expires_in=${session.expires_in}`;
+            clearAuthRedirect();
+            window.location.replace(injectTraceparent(url.toString()));
+          } catch (err) {
+            console.error("[auth] Failed navigating to intendedTarget with existing session:", intendedTarget, err);
+          }
+        }
+      }
+    });
   });
 
   createEffect(() => {
@@ -184,6 +204,7 @@ const Login: Component = () => {
         }
       }
 
+      clearSessionCookie();
       completeAuthFunnel('login', { email: cleanEmail, account_type: state.payload.accountType });
       try { const { getPostHog } = await import('../posthog'); getPostHog()?.identify(data.session.user.id); } catch {}
       const urlSearchParam = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("redirect_to") : null;
